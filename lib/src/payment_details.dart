@@ -10,6 +10,58 @@ enum OpenCryptoPayProofType {
   signedTransactionHex,
 }
 
+class OpenCryptoPayRecipient {
+  const OpenCryptoPayRecipient({
+    this.name,
+    this.street,
+    this.houseNumber,
+    this.zip,
+    this.city,
+    this.country,
+    this.phone,
+    this.mail,
+    this.website,
+    this.registrationNumber,
+  });
+
+  final String? name;
+
+  final String? street;
+
+  final String? houseNumber;
+
+  final String? zip;
+
+  final String? city;
+
+  final String? country;
+
+  final String? phone;
+
+  final String? mail;
+
+  final String? website;
+
+  /// Company register identifier, ex: "CHE-429.856.521".
+  final String? registrationNumber;
+
+  factory OpenCryptoPayRecipient.fromJson(Map<String, dynamic> json) {
+    final Map? postalAddress = json['address'];
+    return OpenCryptoPayRecipient(
+      name: json['name'] as String?,
+      street: postalAddress?['street'] as String?,
+      houseNumber: postalAddress?['houseNumber'] as String?,
+      zip: postalAddress?['zip'] as String?,
+      city: postalAddress?['city'] as String?,
+      country: postalAddress?['country'] as String?,
+      phone: json['phone'] as String?,
+      mail: json['mail'] as String?,
+      website: json['website'] as String?,
+      registrationNumber: json['registrationNumber'] as String?,
+    );
+  }
+}
+
 /// Payment information returned by the first request to the OpenCryptoPay API.
 class OpenCryptoPayPaymentInfo {
   OpenCryptoPayPaymentInfo({
@@ -20,6 +72,7 @@ class OpenCryptoPayPaymentInfo {
     required this.supportedMethods,
     this.raw = const {},
     required this.quoteExpiration,
+    this.recipient,
   });
 
   final String apiUrl;
@@ -34,6 +87,8 @@ class OpenCryptoPayPaymentInfo {
 
   final List<SupportedMethod> supportedMethods;
 
+  final OpenCryptoPayRecipient? recipient;
+
   final Map<String, dynamic> raw;
 
   factory OpenCryptoPayPaymentInfo.fromJson(
@@ -45,6 +100,8 @@ class OpenCryptoPayPaymentInfo {
 
     final quoteExpiration = DateTime.tryParse(quote['expiration'])!;
 
+    final recipient = json['recipient'];
+
     return OpenCryptoPayPaymentInfo(
       apiUrl: apiUrl,
       displayName: json['displayName'] as String,
@@ -52,6 +109,10 @@ class OpenCryptoPayPaymentInfo {
       callback: json['callback'] as String,
       quoteExpiration: quoteExpiration,
       supportedMethods: parseSupportedMethodsFromJson(json),
+      recipient: recipient is Map
+          ? OpenCryptoPayRecipient.fromJson(
+              Map<String, dynamic>.from(recipient))
+          : null,
       raw: Map<String, dynamic>.from(json),
     );
   }
@@ -59,8 +120,8 @@ class OpenCryptoPayPaymentInfo {
 
 /// Transaction details returned by [fetchTransactionDetails].
 ///
-/// [displayName], [quoteId], [callback], and [quoteExpiration] are carried
-/// from the preceding [fetchPaymentInfo] request.
+/// [displayName], [quoteId], [callback], [quoteExpiration] and [recipient] are
+/// carried from the preceding [fetchPaymentInfo] request.
 ///
 /// Shape depends on the selected method:
 ///   - EVM / Bitcoin / Firo / Monero / Zano / Solana / Tron / Cardano:
@@ -74,6 +135,7 @@ class OpenCryptoPayTransactionDetails {
     required this.quoteId,
     required this.callback,
     required this.quoteExpiration,
+    this.recipient,
     this.expiryDate,
     this.blockchain,
     this.uri,
@@ -91,6 +153,8 @@ class OpenCryptoPayTransactionDetails {
   final String callback;
 
   final DateTime quoteExpiration;
+
+  final OpenCryptoPayRecipient? recipient;
 
   /// Whether the quote has expired.
   bool get isQuoteExpired {
@@ -198,6 +262,7 @@ class OpenCryptoPayTransactionDetails {
     required String quoteId,
     required String callback,
     required DateTime quoteExpiration,
+    OpenCryptoPayRecipient? recipient,
   }) {
     DateTime? expiry;
     final expiryRaw = json['expiryDate'];
@@ -211,6 +276,7 @@ class OpenCryptoPayTransactionDetails {
       quoteId: quoteId,
       callback: callback,
       quoteExpiration: quoteExpiration,
+      recipient: recipient,
       expiryDate: expiry,
       blockchain: json['blockchain'] as String?,
       uri: json['uri'] as String?,

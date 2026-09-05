@@ -177,6 +177,36 @@ void main() {
       expect(eth.assets, containsAll(<String>['ETH', 'USDT', 'USDC', 'WBTC']));
       });
     });
+
+    test('parses the recipient block', () {
+      final info = OpenCryptoPayPaymentInfo.fromJson(
+        paymentDetailsJson,
+        apiUrl: _decodedApiUrl,
+      );
+
+      final recipient = info.recipient!;
+      expect(recipient.name, 'hier könnte Viktor stehen');
+      expect(recipient.street, 'Bahnhofstrasse');
+      expect(recipient.houseNumber, '7');
+      expect(recipient.zip, '6300');
+      expect(recipient.city, 'Zug');
+      expect(recipient.country, 'CH');
+      expect(recipient.phone, '+41792684224');
+      expect(recipient.mail, 'mail@ammer.group');
+      expect(recipient.website, 'https://ammer.group/');
+      expect(recipient.registrationNumber, 'CHE-429.856.521');
+    });
+
+    test('recipient is null when absent', () {
+      final json = Map<String, dynamic>.from(paymentDetailsJson)
+        ..remove('recipient');
+      final info = OpenCryptoPayPaymentInfo.fromJson(
+        json,
+        apiUrl: _decodedApiUrl,
+      );
+
+      expect(info.recipient, isNull);
+    });
   });
 
   group('Parsing transaction details correctly', () {
@@ -526,6 +556,8 @@ void main() {
       expect(success.recipientLabel, 'Test Shop');
       expect(success.details.displayName, 'Test Shop');
       expect(success.details.quoteId, 'plq_62b1865ed28358be');
+      expect(success.details.recipient?.name, 'hier könnte Viktor stehen');
+      expect(success.details.recipient?.city, 'Zug');
       // Bitcoin hint asks for HEX → wallet must NOT broadcast.
       expect(success.proofType,
           OpenCryptoPayProofType.signedTransactionHex);

@@ -1,6 +1,6 @@
 name: opencryptopay
 description: Provider agnostic Dart implementation of the [OpenCryptoPay](https://github.com/openCryptoPay/landingPage) payment flow for crypto wallets.
-version: 0.1.0
+version: 0.2.0
 repository: https://github.com/cyrix126/opencryptopay
 issue_tracker: https://github.com/cyrix126/opencryptopay/issues
 

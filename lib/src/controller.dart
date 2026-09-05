@@ -85,6 +85,7 @@ class OpenCryptoPayController {
         quoteId: paymentInfo.quoteId,
         callback: paymentInfo.callback,
         quoteExpiration: paymentInfo.quoteExpiration,
+        recipient: paymentInfo.recipient,
       );
     } on OpenCryptoPayNoPendingPaymentException {
       return const OpenCryptoPayNoPending();

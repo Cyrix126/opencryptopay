@@ -118,6 +118,7 @@ class OpenCryptoPayService {
     required String quoteId,
     required String callback,
     required DateTime quoteExpiration,
+    OpenCryptoPayRecipient? recipient,
   }) async {
     final url = buildTransactionDetailsUrl(
       apiUrl: apiUrl,
@@ -169,6 +170,7 @@ class OpenCryptoPayService {
       quoteId: quoteId,
       callback: callback,
       quoteExpiration: quoteExpiration,
+      recipient: recipient,
     );
   }
 
