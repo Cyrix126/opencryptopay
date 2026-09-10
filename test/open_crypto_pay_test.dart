@@ -197,6 +197,53 @@ void main() {
       expect(recipient.registrationNumber, 'CHE-429.856.521');
     });
 
+    test('formats the recipient contact details', () {
+      final recipient = OpenCryptoPayPaymentInfo.fromJson(
+        paymentDetailsJson,
+        apiUrl: _decodedApiUrl,
+      ).recipient!;
+
+      expect(recipient.postalAddress, 'Bahnhofstrasse 7\n6300 Zug\nCH');
+      expect(recipient.phoneUri, Uri.parse('tel:+41792684224'));
+      expect(recipient.mailUri, Uri.parse('mailto:mail@ammer.group'));
+      expect(recipient.websiteUri, Uri.parse('https://ammer.group/'));
+    });
+
+    test('recipient contact details skip empty fields', () {
+      const recipient = OpenCryptoPayRecipient(
+        street: 'Bahnhofstrasse',
+        houseNumber: '',
+        city: 'Zug',
+        phone: '',
+        website: 'ammer.group',
+      );
+
+      expect(recipient.postalAddress, 'Bahnhofstrasse\nZug');
+      expect(recipient.phoneUri, isNull);
+      expect(recipient.mailUri, isNull);
+      expect(recipient.websiteUri, isNull);
+      expect(const OpenCryptoPayRecipient().postalAddress, isNull);
+    });
+
+    test('legal name is null when the recipient has none', () {
+      OpenCryptoPayTransactionDetails details(OpenCryptoPayRecipient? r) =>
+          OpenCryptoPayTransactionDetails(
+            apiUrl: _decodedApiUrl,
+            displayName: 'Test Shop',
+            quoteId: 'plq',
+            callback: _callbackUrl,
+            quoteExpiration: DateTime.parse(_quoteExpiration),
+            recipient: r,
+          );
+
+      expect(
+        details(const OpenCryptoPayRecipient(name: 'Test Shop AG')).legalName,
+        'Test Shop AG',
+      );
+      expect(details(const OpenCryptoPayRecipient(name: '')).legalName, isNull);
+      expect(details(null).legalName, isNull);
+    });
+
     test('recipient is null when absent', () {
       final json = Map<String, dynamic>.from(paymentDetailsJson)
         ..remove('recipient');

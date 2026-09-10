@@ -45,6 +45,32 @@ class OpenCryptoPayRecipient {
   /// Company register identifier, ex: "CHE-429.856.521".
   final String? registrationNumber;
 
+  String? get postalAddress {
+    final lines = [
+      [street, houseNumber],
+      [zip, city],
+      [country],
+    ]
+        .map((parts) => parts.nonNulls.where((p) => p.isNotEmpty).join(' '))
+        .where((line) => line.isNotEmpty);
+    return lines.isEmpty ? null : lines.join('\n');
+  }
+
+  Uri? get phoneUri => switch (phone) {
+        final phone? when phone.isNotEmpty => Uri(scheme: 'tel', path: phone),
+        _ => null,
+      };
+
+  Uri? get mailUri => switch (mail) {
+        final mail? when mail.isNotEmpty => Uri(scheme: 'mailto', path: mail),
+        _ => null,
+      };
+
+  Uri? get websiteUri => switch (Uri.tryParse(website ?? '')) {
+        final uri? when uri.hasScheme => uri,
+        _ => null,
+      };
+
   factory OpenCryptoPayRecipient.fromJson(Map<String, dynamic> json) {
     final Map? postalAddress = json['address'];
     return OpenCryptoPayRecipient(
@@ -160,6 +186,12 @@ class OpenCryptoPayTransactionDetails {
   bool get isQuoteExpired {
     return quoteExpiration.isBefore(clock.now());
   }
+
+  String? get legalName => switch (recipient?.name) {
+        final name? when name.isNotEmpty => name,
+        _ => null,
+      };
+
   final DateTime? expiryDate;
 
   final String? blockchain;
@@ -239,7 +271,6 @@ class OpenCryptoPayTransactionDetails {
     return params != null &&
         (params.containsKey('value') || params.containsKey('uint256'));
   }
-
 
   OpenCryptoPayProofType get proofType {
     final h = hint;
