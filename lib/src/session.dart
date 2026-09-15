@@ -2,7 +2,6 @@ import 'coin.dart';
 import 'exceptions.dart';
 import 'payment_details.dart';
 import 'service.dart';
-import 'strings.dart';
 
 /// Outcome of [OpenCryptoPaySession.submitProof].
 sealed class OpenCryptoPayProofResult {
@@ -24,12 +23,7 @@ class OpenCryptoPayProofQuoteExpired extends OpenCryptoPayProofResult {
 
 /// Submission failed; the session stays active so the caller can retry.
 class OpenCryptoPayProofFailed extends OpenCryptoPayProofResult {
-  const OpenCryptoPayProofFailed({required this.message, required this.error});
-
-  /// User-facing message, worded for whether the wallet already broadcast
-  /// the transaction itself (see [OpenCryptoPayStrings.proofFailed] and
-  /// [OpenCryptoPayStrings.deliveryFailed]).
-  final String message;
+  const OpenCryptoPayProofFailed(this.error);
 
   final Object error;
 }
@@ -84,12 +78,7 @@ class OpenCryptoPaySession {
     } on OpenCryptoPayQuoteExpiredException catch (e) {
       return OpenCryptoPayProofQuoteExpired(e);
     } catch (e) {
-      return OpenCryptoPayProofFailed(
-        message: requiresBroadcast
-            ? OpenCryptoPayStrings.proofFailed(e)
-            : OpenCryptoPayStrings.deliveryFailed(e),
-        error: e,
-      );
+      return OpenCryptoPayProofFailed(e);
     }
   }
 }

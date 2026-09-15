@@ -10,7 +10,7 @@
 ///    via [OpenCryptoPayController].
 /// 3. On [OpenCryptoPaySuccess], paying [OpenCryptoPaySuccess.address] and
 ///    submitting the proof through [OpenCryptoPaySuccess.session]; on an
-///    [OpenCryptoPayFailure], displaying its `title`/`message`.
+///    [OpenCryptoPayFailure], displaying [OpenCryptoPayStrings.failure].
 ///
 /// See the `test/` directory for a complete usage example.
 library;

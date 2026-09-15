@@ -3,31 +3,19 @@ import 'package:decimal/decimal.dart';
 import 'coin.dart';
 import 'payment_details.dart';
 import 'session.dart';
-import 'strings.dart';
 
 sealed class OpenCryptoPayResult {
   const OpenCryptoPayResult();
 }
 
-/// Any non-success outcome. [title] and [message] are ready to display (or
-/// to use as localization keys, see [OpenCryptoPayStrings]).
+/// Any non-success outcome.
 sealed class OpenCryptoPayFailure extends OpenCryptoPayResult {
   const OpenCryptoPayFailure();
-
-  String get title;
-
-  String get message;
 }
 
 /// The seller has no pending payment (HTTP 404).
 class OpenCryptoPayNoPending extends OpenCryptoPayFailure {
   const OpenCryptoPayNoPending();
-
-  @override
-  String get title => OpenCryptoPayStrings.noPendingTitle;
-
-  @override
-  String get message => OpenCryptoPayStrings.noPendingMessage;
 }
 
 /// The provider rejected this wallet's coin (HTTP 400). [alternatives] holds
@@ -36,34 +24,16 @@ class OpenCryptoPayNoPending extends OpenCryptoPayFailure {
 class OpenCryptoPayUnsupported extends OpenCryptoPayFailure {
   const OpenCryptoPayUnsupported([this.alternatives]);
   final List<CryptoCoin>? alternatives;
-
-  @override
-  String get title => OpenCryptoPayStrings.unsupportedMethodTitle;
-
-  @override
-  String get message => OpenCryptoPayStrings.unsupportedMethod;
 }
 
 /// The payment requires a Lightning invoice
 class OpenCryptoPayLightning extends OpenCryptoPayFailure {
   const OpenCryptoPayLightning();
-
-  @override
-  String get title => OpenCryptoPayStrings.lightningTitle;
-
-  @override
-  String get message => OpenCryptoPayStrings.lightningMessage;
 }
 
 /// The response did not contain a usable on-chain address.
 class OpenCryptoPayInvalidAddress extends OpenCryptoPayFailure {
   const OpenCryptoPayInvalidAddress();
-
-  @override
-  String get title => OpenCryptoPayStrings.invalidAddressTitle;
-
-  @override
-  String get message => OpenCryptoPayStrings.invalidAddressMessage;
 }
 
 /// The link could not be decoded, or another error occurred.
@@ -71,16 +41,6 @@ class OpenCryptoPayError extends OpenCryptoPayFailure {
   const OpenCryptoPayError({required this.isDecodeError, this.error});
   final bool isDecodeError;
   final Object? error;
-
-  @override
-  String get title => isDecodeError
-      ? OpenCryptoPayStrings.decodeFailedTitle
-      : OpenCryptoPayStrings.genericErrorTitle;
-
-  @override
-  String get message => isDecodeError
-      ? OpenCryptoPayStrings.decodeFailedMessage
-      : (error?.toString() ?? OpenCryptoPayStrings.genericErrorMessage);
 }
 
 /// A pending payment was found and is payable with this wallet's coin.

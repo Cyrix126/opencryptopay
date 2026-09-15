@@ -814,7 +814,26 @@ void main() {
 
       expect(result, isA<OpenCryptoPayError>());
       expect((result as OpenCryptoPayError).isDecodeError, isTrue);
-      expect(result.message, OpenCryptoPayStrings.decodeFailedMessage);
+    });
+
+    test('network failure maps to a non-decode error', () async {
+      final controller = _controller(
+        MockClient((_) async => throw Exception('socket closed')),
+      );
+
+      final result = await controller.run(
+        qrData: _qrLink,
+        coin: _btc,
+        ownedCoins: owned,
+      );
+
+      expect(result, isA<OpenCryptoPayError>());
+      expect((result as OpenCryptoPayError).isDecodeError, isFalse);
+      expect(result.error, isNotNull);
+      expect(
+        OpenCryptoPayStrings.failure(result).message,
+        OpenCryptoPayStrings.genericErrorMessage,
+      );
     });
 
     test('session.submitProof completes on success, retains on failure',
@@ -944,7 +963,13 @@ void main() {
         );
         final failed =
             await session.submitProof('signedHexDummy') as OpenCryptoPayProofFailed;
-        expect(failed.message, contains('Could not deliver the payment'));
+        expect(failed.error, isA<OpenCryptoPayApiException>());
+        expect(
+          OpenCryptoPayStrings.proofFailure(
+            requiresBroadcast: session.requiresBroadcast,
+          ).title,
+          OpenCryptoPayStrings.deliveryFailedTitle,
+        );
       });
     });
 
