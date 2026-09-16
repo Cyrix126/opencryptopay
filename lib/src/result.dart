@@ -36,6 +36,11 @@ class OpenCryptoPayInvalidAddress extends OpenCryptoPayFailure {
   const OpenCryptoPayInvalidAddress();
 }
 
+/// The payment URI carries an amount that cannot be parsed.
+class OpenCryptoPayInvalidAmount extends OpenCryptoPayFailure {
+  const OpenCryptoPayInvalidAmount();
+}
+
 /// The link could not be decoded, or another error occurred.
 class OpenCryptoPayError extends OpenCryptoPayFailure {
   const OpenCryptoPayError({required this.isDecodeError, this.error});

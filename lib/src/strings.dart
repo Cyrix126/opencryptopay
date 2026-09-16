@@ -22,6 +22,10 @@ class OpenCryptoPayStrings {
   static const String invalidAddressMessage =
       'The payment response did not contain a valid address.';
 
+  static const String invalidAmountTitle = 'Invalid payment';
+  static const String invalidAmountMessage =
+      'The payment response did not contain a valid amount.';
+
   static const String decodeFailedTitle = 'Decoding unsuccessful';
   static const String decodeFailedMessage =
       'This OpenCryptoPay code could not be decoded.';
@@ -69,6 +73,10 @@ class OpenCryptoPayStrings {
         OpenCryptoPayInvalidAddress() => (
             title: invalidAddressTitle,
             message: invalidAddressMessage,
+          ),
+        OpenCryptoPayInvalidAmount() => (
+            title: invalidAmountTitle,
+            message: invalidAmountMessage,
           ),
         OpenCryptoPayError(isDecodeError: true) => (
             title: decodeFailedTitle,

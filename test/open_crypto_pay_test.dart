@@ -710,6 +710,30 @@ void main() {
       expect(result, isA<OpenCryptoPayInvalidAddress>());
     });
 
+    test('unparsable amount maps to an invalid amount result', () async {
+      for (final uri in [
+        'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6?amount=abc',
+        'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@1/transfer'
+            '?address=0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC&uint256=1.5e18',
+      ]) {
+        final controller = _controller(_mockTwoRequestFlow(
+          txDetailsJson: {'blockchain': 'Bitcoin', 'uri': uri, 'hint': 'x'},
+        ));
+
+        final result = await controller.run(
+          qrData: _qrLink,
+          coin: _btc,
+          ownedCoins: owned,
+        );
+
+        expect(result, isA<OpenCryptoPayInvalidAmount>(), reason: uri);
+        expect(
+          OpenCryptoPayStrings.failure(result as OpenCryptoPayFailure).title,
+          OpenCryptoPayStrings.invalidAmountTitle,
+        );
+      }
+    });
+
     test('unsupported coin maps to unsupported result with alternatives',
         () async {
       var calls = 0;

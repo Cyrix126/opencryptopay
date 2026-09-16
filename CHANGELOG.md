@@ -3,6 +3,7 @@
 ## 0.4.0
 
 - error handling: separate exception from the error message.
+- Add `OpenCryptoPayInvalidAmount` for a payment URI whose amount cannot be parsed
 
 ## 0.3.0
 
