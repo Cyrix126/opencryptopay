@@ -53,6 +53,11 @@ class OpenCryptoPayStrings {
   static const String deliveryFailed =
       'Could not deliver the payment to the seller. Nothing was sent.';
 
+  static const String deliveryUnconfirmedTitle = 'Delivery not confirmed';
+  static const String deliveryUnconfirmed =
+      'The delivery to the seller could not be confirmed. '
+      'Check your transaction history before paying again.';
+
   /// Title and message for a [failure].
   static ({String title, String message}) failure(
     OpenCryptoPayFailure failure,
@@ -91,8 +96,13 @@ class OpenCryptoPayStrings {
   /// Title and message for a failed proof submission.
   static ({String title, String message}) proofFailure({
     required bool requiresBroadcast,
-  }) =>
-      requiresBroadcast
-          ? (title: proofFailedTitle, message: proofFailed)
-          : (title: deliveryFailedTitle, message: deliveryFailed);
+    required bool providerAnswered,
+  }) {
+    if (requiresBroadcast) {
+      return (title: proofFailedTitle, message: proofFailed);
+    }
+    return providerAnswered
+        ? (title: deliveryFailedTitle, message: deliveryFailed)
+        : (title: deliveryUnconfirmedTitle, message: deliveryUnconfirmed);
+  }
 }

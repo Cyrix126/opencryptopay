@@ -988,11 +988,31 @@ void main() {
         final failed =
             await session.submitProof('signedHexDummy') as OpenCryptoPayProofFailed;
         expect(failed.error, isA<OpenCryptoPayApiException>());
+        expect(failed.providerAnswered, isTrue);
         expect(
           OpenCryptoPayStrings.proofFailure(
             requiresBroadcast: session.requiresBroadcast,
+            providerAnswered: failed.providerAnswered,
           ).title,
           OpenCryptoPayStrings.deliveryFailedTitle,
+        );
+
+        final unreachable = OpenCryptoPaySession(
+          details: success.details,
+          coin: success.coin,
+          service: OpenCryptoPayService(
+            client: MockClient((_) async => throw Exception('socket closed')),
+          ),
+        );
+        final lost =
+            await unreachable.submitProof('signedHexDummy') as OpenCryptoPayProofFailed;
+        expect(lost.providerAnswered, isFalse);
+        expect(
+          OpenCryptoPayStrings.proofFailure(
+            requiresBroadcast: unreachable.requiresBroadcast,
+            providerAnswered: lost.providerAnswered,
+          ).title,
+          OpenCryptoPayStrings.deliveryUnconfirmedTitle,
         );
       });
     });

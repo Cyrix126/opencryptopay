@@ -26,6 +26,12 @@ class OpenCryptoPayProofFailed extends OpenCryptoPayProofResult {
   const OpenCryptoPayProofFailed(this.error);
 
   final Object error;
+
+  /// Whether the provider answered with an error. Otherwise the request may
+  /// have reached it before the connection failed.
+  bool get providerAnswered =>
+      error is OpenCryptoPayApiException &&
+      (error as OpenCryptoPayApiException).statusCode != null;
 }
 
 /// A pending payment accepted for the wallet's coin, awaiting proof of payment.
