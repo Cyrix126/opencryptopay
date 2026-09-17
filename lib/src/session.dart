@@ -40,10 +40,14 @@ class OpenCryptoPaySession {
     required this.details,
     required this.coin,
     required OpenCryptoPayService service,
+    this.minFee = 0,
   }) : _service = service;
 
   final OpenCryptoPayTransactionDetails details;
   final CryptoCoin coin;
+
+  /// [SupportedMethod.minFee] of the method matching [coin].
+  final num minFee;
   final OpenCryptoPayService _service;
 
   bool _completed = false;

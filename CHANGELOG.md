@@ -5,6 +5,7 @@
 - error handling: separate exception from the error message.
 - Add `OpenCryptoPayInvalidAmount` for a payment URI whose amount cannot be parsed
 - `OpenCryptoPayProofFailed.providerAnswered` tells a provider rejection from a lost response; `proofFailure` words the latter as unconfirmed
+- Carry the per-method `minFee` on `SupportedMethod` and `OpenCryptoPaySession`
 
 ## 0.3.0
 

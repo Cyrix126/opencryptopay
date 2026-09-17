@@ -62,7 +62,8 @@ class OpenCryptoPayController {
       return OpenCryptoPayError(isDecodeError: false, error: e);
     }
 
-    if (!_isMethodSupported(paymentInfo.supportedMethods, method)) {
+    final supported = _supportedMethod(paymentInfo.supportedMethods, method);
+    if (supported == null) {
       if (ownedCoins != null) {
         return OpenCryptoPayUnsupported(
           _alternativesFor(
@@ -133,6 +134,7 @@ class OpenCryptoPayController {
         details: details,
         coin: coin,
         service: _service,
+        minFee: supported.minFee,
       ),
       address: address,
       recipientLabel: recipientLabel,
@@ -140,9 +142,8 @@ class OpenCryptoPayController {
     );
   }
 
-  /// Check whether a specific method/asset pair is in the provider's supported
-  /// list.
-  static bool _isMethodSupported(
+  /// The provider's entry for a specific method/asset pair, if supported.
+  static SupportedMethod? _supportedMethod(
     List<SupportedMethod> supportedMethods,
     OpenCryptoPayMethod method,
   ) {
@@ -152,11 +153,11 @@ class OpenCryptoPayController {
       if (sm.method == key) {
         if (sm.assets.isEmpty ||
             sm.assets.any((a) => a == asset)) {
-          return true;
+          return sm;
         }
       }
     }
-    return false;
+    return null;
   }
 
   /// Resolve payable alternatives, excluding the rejected (method, asset) pair

@@ -175,7 +175,21 @@ void main() {
 
       final eth = info.supportedMethods.firstWhere((e) => e.method == 'Ethereum');
       expect(eth.assets, containsAll(<String>['ETH', 'USDT', 'USDC', 'WBTC']));
+      expect(eth.minFee, 98965874);
+      final btc = info.supportedMethods.firstWhere((e) => e.method == 'Bitcoin');
+      expect(btc.minFee, 2.146);
+      final xmr = info.supportedMethods.firstWhere((e) => e.method == 'Monero');
+      expect(xmr.minFee, 0);
       });
+    });
+
+    test('a method without minFee parses as zero', () {
+      final methods = parseSupportedMethodsFromJson({
+        'transferAmounts': [
+          {'method': 'Bitcoin', 'assets': [{'asset': 'BTC'}]},
+        ],
+      });
+      expect(methods.single.minFee, 0);
     });
 
     test('parses the recipient block', () {
@@ -858,6 +872,15 @@ void main() {
         OpenCryptoPayStrings.failure(result).message,
         OpenCryptoPayStrings.genericErrorMessage,
       );
+    });
+
+    test('the session carries the matched method minFee', () async {
+      final success = await _controller(_mockTwoRequestFlow(
+        txDetailsJson: _btcDetails,
+      )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned)
+          as OpenCryptoPaySuccess;
+
+      expect(success.session.minFee, 2.146);
     });
 
     test('session.submitProof completes on success, retains on failure',

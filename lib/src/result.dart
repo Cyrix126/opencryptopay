@@ -71,6 +71,8 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
 
   OpenCryptoPayTransactionDetails get details => session.details;
 
+  num get minFee => session.minFee;
+
   CryptoCoin get coin => session.coin;
 
   bool get isErc20Transfer => details.isErc20Transfer;

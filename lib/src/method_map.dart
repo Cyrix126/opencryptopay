@@ -2,10 +2,18 @@ import 'coin.dart';
 
 /// A provider-supported payment method and the assets it accepts.
 class SupportedMethod {
-  const SupportedMethod({required this.method, this.assets = const []});
+  const SupportedMethod({
+    required this.method,
+    this.assets = const [],
+    this.minFee = 0,
+  });
 
   /// Provider blockchain/method name, ex: "Bitcoin", "Ethereum".
   final String method;
+
+  /// Minimum network fee the wallet must use for this method, in the
+  /// method's unit: gas price in wei for EVM methods, sat/vB for Bitcoin.
+  final num minFee;
 
   /// Asset tickers accepted under this method, ex: ["BTC"], ["ETH", "USDT"].
   /// Empty when the provider didn't publish an asset list (treat as "any asset").
@@ -90,7 +98,11 @@ List<SupportedMethod> parseSupportedMethodsFromJson(Map<String, dynamic> json) {
             }
           }
         }
-        methods.add(SupportedMethod(method: method, assets: assets));
+        methods.add(SupportedMethod(
+          method: method,
+          assets: assets,
+          minFee: (entry['minFee'] as num?) ?? 0,
+        ));
       }
     }
   }
