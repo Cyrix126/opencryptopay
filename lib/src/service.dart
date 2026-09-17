@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-import 'package:bech32/bech32.dart';
+import 'package:blockchain_utils/bech32/bech32_base.dart';
 import 'package:http/http.dart';
 
 import 'coin.dart';
@@ -48,9 +48,8 @@ class OpenCryptoPayService {
 
   /// Decode an LNURL (LUD-01) into its underlying https API URL.
   static String decodeLnurl(String lnurl) {
-    final decoded = bech32.decode(lnurl, lnurl.length + 1);
-    final bytes = _convertBits(decoded.data, 5, 8, false);
-    return utf8.decode(bytes);
+    final decoded = Bech32Decoder.decodeWithoutHRP(lnurl);
+    return utf8.decode(decoded.item2);
   }
 
   /// Build the transaction-details request URL by appending the `method` and
@@ -244,38 +243,4 @@ class OpenCryptoPayService {
     }
     return null;
   }
-}
-
-/// Standard bech32 5<->8 bit regrouping (BIP-173 `convertBits`).
-List<int> _convertBits(List<int> data, int from, int to, bool pad) {
-  var acc = 0;
-  var bits = 0;
-  final result = <int>[];
-  final maxv = (1 << to) - 1;
-
-  for (final value in data) {
-    if (value < 0 || (value >> from) != 0) {
-      throw OpenCryptoPayInvalidUriException(
-        'Invalid value while decoding LNURL data.',
-      );
-    }
-    acc = (acc << from) | value;
-    bits += from;
-    while (bits >= to) {
-      bits -= to;
-      result.add((acc >> bits) & maxv);
-    }
-  }
-
-  if (pad) {
-    if (bits > 0) {
-      result.add((acc << (to - bits)) & maxv);
-    }
-  } else if (bits >= from || ((acc << (to - bits)) & maxv) != 0) {
-    throw OpenCryptoPayInvalidUriException(
-      'Invalid padding while decoding LNURL data.',
-    );
-  }
-
-  return result;
 }

@@ -6,6 +6,7 @@
 - Add `OpenCryptoPayInvalidAmount` for a payment URI whose amount cannot be parsed
 - `OpenCryptoPayProofFailed.providerAnswered` tells a provider rejection from a lost response; `proofFailure` words the latter as unconfirmed
 - Carry the per-method `minFee` on `SupportedMethod` and `OpenCryptoPaySession`
+- Decode LNURL with `blockchain_utils`, dropping the `bech32` git dependency
 
 ## 0.3.0
 
