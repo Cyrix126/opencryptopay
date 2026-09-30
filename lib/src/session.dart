@@ -14,8 +14,7 @@ class OpenCryptoPayProofAccepted extends OpenCryptoPayProofResult {
 }
 
 /// The quote expired before the proof could be submitted. Only occurs on the
-/// signed-transaction-hex flow, before anything reaches the provider — the
-/// payment was NOT sent.
+/// signed-transaction-hex flow, before this submission reaches the provider.
 class OpenCryptoPayProofQuoteExpired extends OpenCryptoPayProofResult {
   const OpenCryptoPayProofQuoteExpired(this.error);
   final Object error;
@@ -27,11 +26,13 @@ class OpenCryptoPayProofFailed extends OpenCryptoPayProofResult {
 
   final Object error;
 
-  /// Whether the provider answered with an error. Otherwise the request may
-  /// have reached it before the connection failed.
-  bool get providerAnswered =>
-      error is OpenCryptoPayApiException &&
-      (error as OpenCryptoPayApiException).statusCode != null;
+  /// Whether the provider refused the proof with a 4xx answer. After any
+  /// other failure the provider may hold the payment.
+  bool get providerRejected => switch (error) {
+        OpenCryptoPayApiException(:final statusCode?) =>
+          statusCode >= 400 && statusCode < 500,
+        _ => false,
+      };
 }
 
 /// A pending payment accepted for the wallet's coin, awaiting proof of payment.
@@ -51,9 +52,14 @@ class OpenCryptoPaySession {
   final OpenCryptoPayService _service;
 
   bool _completed = false;
+  bool _mayHoldPayment = false;
 
   /// Whether the proof was already submitted successfully.
   bool get isCompleted => _completed;
+
+  /// Whether a signed transaction whose submission failed may have reached
+  /// the provider, so the payment may still go through.
+  bool get mayHoldPayment => _mayHoldPayment;
 
   OpenCryptoPayProofType get proofType => details.proofType;
 
@@ -88,7 +94,11 @@ class OpenCryptoPaySession {
     } on OpenCryptoPayQuoteExpiredException catch (e) {
       return OpenCryptoPayProofQuoteExpired(e);
     } catch (e) {
-      return OpenCryptoPayProofFailed(e);
+      final failed = OpenCryptoPayProofFailed(e);
+      if (!requiresBroadcast && !failed.providerRejected) {
+        _mayHoldPayment = true;
+      }
+      return failed;
     }
   }
 }

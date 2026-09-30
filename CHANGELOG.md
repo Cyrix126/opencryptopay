@@ -4,7 +4,8 @@
 
 - error handling: separate exception from the error message.
 - Add `OpenCryptoPayInvalidAmount` for a payment URI whose amount cannot be parsed
-- `OpenCryptoPayProofFailed.providerAnswered` tells a provider rejection from a lost response; `proofFailure` words the latter as unconfirmed
+- `OpenCryptoPayProofFailed.providerRejected` tells a proof the provider refused (4xx) from a failure after which it may hold the payment, which `OpenCryptoPaySession.mayHoldPayment` remembers
+- `OpenCryptoPayStrings.proofFailure` and `quoteExpiredAtSend` word a failed submission or an expired quote from the session
 - Carry the per-method `minFee` on `SupportedMethod` and `OpenCryptoPaySession`
 - Decode LNURL with `blockchain_utils`, dropping the `bech32` git dependency
 

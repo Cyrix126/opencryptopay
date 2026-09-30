@@ -1,4 +1,5 @@
 import 'result.dart';
+import 'session.dart';
 
 /// User-facing strings for the OpenCryptoPay flow.
 ///
@@ -93,16 +94,26 @@ class OpenCryptoPayStrings {
           ),
       };
 
-  /// Title and message for a failed proof submission.
-  static ({String title, String message}) proofFailure({
-    required bool requiresBroadcast,
-    required bool providerAnswered,
-  }) {
-    if (requiresBroadcast) {
+  /// Title and message for the session's failed proof submission.
+  static ({String title, String message}) proofFailure(
+    OpenCryptoPaySession session,
+  ) {
+    if (session.requiresBroadcast) {
       return (title: proofFailedTitle, message: proofFailed);
     }
-    return providerAnswered
-        ? (title: deliveryFailedTitle, message: deliveryFailed)
-        : (title: deliveryUnconfirmedTitle, message: deliveryUnconfirmed);
+    return session.mayHoldPayment
+        ? (title: deliveryUnconfirmedTitle, message: deliveryUnconfirmed)
+        : (title: deliveryFailedTitle, message: deliveryFailed);
   }
+
+  /// Title and message when an expired quote stops the session's payment.
+  static ({String title, String message}) quoteExpiredAtSend(
+    OpenCryptoPaySession session,
+  ) =>
+      session.mayHoldPayment
+          ? (title: deliveryUnconfirmedTitle, message: deliveryUnconfirmed)
+          : (
+              title: quoteExpiredTitle,
+              message: quoteExpiredMessage(paymentNotSent: true),
+            );
 }

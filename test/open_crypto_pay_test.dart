@@ -1001,42 +1001,91 @@ void main() {
             as OpenCryptoPaySuccess;
 
         // _btcDetails carries the HEX hint → provider broadcasts.
+        OpenCryptoPaySession sessionWith(Client client) => OpenCryptoPaySession(
+              details: success.details,
+              coin: success.coin,
+              service: OpenCryptoPayService(client: client),
+            );
+        Future<OpenCryptoPayProofFailed> fail(
+                OpenCryptoPaySession session) async =>
+            await session.submitProof('signedHexDummy')
+                as OpenCryptoPayProofFailed;
+
+        final refusing = sessionWith(_mockHttpReturning(_res('bad', 400)));
+        final refused = await fail(refusing);
+        expect(refused.error, isA<OpenCryptoPayApiException>());
+        expect(refused.providerRejected, isTrue);
+        expect(refusing.mayHoldPayment, isFalse);
+        expect(OpenCryptoPayStrings.proofFailure(refusing).title,
+            OpenCryptoPayStrings.deliveryFailedTitle);
+
+        // A server error may come after the provider broadcast.
+        final failing = sessionWith(_mockHttpReturning(_res('bad', 503)));
+        expect((await fail(failing)).providerRejected, isFalse);
+        expect(failing.mayHoldPayment, isTrue);
+        expect(OpenCryptoPayStrings.proofFailure(failing).title,
+            OpenCryptoPayStrings.deliveryUnconfirmedTitle);
+
+        final unreachable = sessionWith(
+            MockClient((_) async => throw Exception('socket closed')));
+        expect((await fail(unreachable)).providerRejected, isFalse);
+        expect(unreachable.mayHoldPayment, isTrue);
+        expect(OpenCryptoPayStrings.proofFailure(unreachable).title,
+            OpenCryptoPayStrings.deliveryUnconfirmedTitle);
+      });
+    });
+
+    test('a refusal after a possibly delivered proof stays unconfirmed',
+        () async {
+      await withClock(fixedClock, () async {
+        final success = await _controller(_mockTwoRequestFlow(
+          txDetailsJson: _btcDetails,
+        )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned)
+            as OpenCryptoPaySuccess;
+        var attempts = 0;
         final session = OpenCryptoPaySession(
           details: success.details,
           coin: success.coin,
           service: OpenCryptoPayService(
-            client: _mockHttpReturning(_res('bad', 500)),
+            client: MockClient((_) async {
+              if (attempts++ == 0) throw Exception('socket closed');
+              return _res('bad', 400);
+            }),
           ),
         );
-        final failed =
-            await session.submitProof('signedHexDummy') as OpenCryptoPayProofFailed;
-        expect(failed.error, isA<OpenCryptoPayApiException>());
-        expect(failed.providerAnswered, isTrue);
-        expect(
-          OpenCryptoPayStrings.proofFailure(
-            requiresBroadcast: session.requiresBroadcast,
-            providerAnswered: failed.providerAnswered,
-          ).title,
-          OpenCryptoPayStrings.deliveryFailedTitle,
-        );
 
-        final unreachable = OpenCryptoPaySession(
+        await session.submitProof('signedHexDummy');
+        final refused = await session.submitProof('signedHexDummy')
+            as OpenCryptoPayProofFailed;
+        expect(refused.providerRejected, isTrue);
+        expect(session.mayHoldPayment, isTrue);
+        expect(OpenCryptoPayStrings.proofFailure(session).title,
+            OpenCryptoPayStrings.deliveryUnconfirmedTitle);
+      });
+    });
+
+    test('an expired quote at send reports a possibly delivered proof',
+        () async {
+      await withClock(fixedClock, () async {
+        final success = await _controller(_mockTwoRequestFlow(
+          txDetailsJson: _btcDetails,
+        )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned)
+            as OpenCryptoPaySuccess;
+        final session = OpenCryptoPaySession(
           details: success.details,
           coin: success.coin,
           service: OpenCryptoPayService(
             client: MockClient((_) async => throw Exception('socket closed')),
           ),
         );
-        final lost =
-            await unreachable.submitProof('signedHexDummy') as OpenCryptoPayProofFailed;
-        expect(lost.providerAnswered, isFalse);
-        expect(
-          OpenCryptoPayStrings.proofFailure(
-            requiresBroadcast: unreachable.requiresBroadcast,
-            providerAnswered: lost.providerAnswered,
-          ).title,
-          OpenCryptoPayStrings.deliveryUnconfirmedTitle,
-        );
+
+        final notSent = OpenCryptoPayStrings.quoteExpiredAtSend(session);
+        expect(notSent.title, OpenCryptoPayStrings.quoteExpiredTitle);
+        expect(notSent.message, contains('NOT sent'));
+
+        await session.submitProof('signedHexDummy');
+        expect(OpenCryptoPayStrings.quoteExpiredAtSend(session).title,
+            OpenCryptoPayStrings.deliveryUnconfirmedTitle);
       });
     });
 
