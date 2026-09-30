@@ -6,7 +6,7 @@
 - Add `OpenCryptoPayInvalidAmount` for a payment URI whose amount cannot be parsed
 - `OpenCryptoPayProofFailed.providerRejected` tells a proof the provider refused (4xx) from a failure after which it may hold the payment, which `OpenCryptoPaySession.mayHoldPayment` remembers
 - `OpenCryptoPayStrings.proofFailure` and `quoteExpiredAtSend` word a failed submission or an expired quote from the session
-- Carry the per-method `minFee` on `SupportedMethod` and `OpenCryptoPaySession`
+- Carry the per-method `minFee` on `SupportedMethod` and `OpenCryptoPaySession`; `CryptoCoin.chainType` sets its `minFeeUnit` (sat/vB for Bitcoin-derived chains, gas price in wei for EVM chains)
 - Decode LNURL with `blockchain_utils`, dropping the `bech32` git dependency
 
 ## 0.3.0

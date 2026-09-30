@@ -1,5 +1,6 @@
 import 'coin.dart';
 import 'exceptions.dart';
+import 'method_map.dart';
 import 'payment_details.dart';
 import 'service.dart';
 
@@ -50,6 +51,12 @@ class OpenCryptoPaySession {
   /// [SupportedMethod.minFee] of the method matching [coin].
   final num minFee;
   final OpenCryptoPayService _service;
+
+  OpenCryptoPayFeeUnit get minFeeUnit => switch (coin.chainType) {
+        CryptoChainType.bitcoinDerived => OpenCryptoPayFeeUnit.satsPerVByte,
+        CryptoChainType.evm => OpenCryptoPayFeeUnit.weiPerGas,
+        CryptoChainType.other => OpenCryptoPayFeeUnit.unknown,
+      };
 
   bool _completed = false;
   bool _mayHoldPayment = false;

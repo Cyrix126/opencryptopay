@@ -1,5 +1,17 @@
 import 'coin.dart';
 
+/// Unit of a payment method's minimum network fee.
+enum OpenCryptoPayFeeUnit {
+  /// Satoshis per virtual byte.
+  satsPerVByte,
+
+  /// Gas price in wei.
+  weiPerGas,
+
+  /// The method has no known fee unit.
+  unknown,
+}
+
 /// A provider-supported payment method and the assets it accepts.
 class SupportedMethod {
   const SupportedMethod({
@@ -11,8 +23,8 @@ class SupportedMethod {
   /// Provider blockchain/method name, ex: "Bitcoin", "Ethereum".
   final String method;
 
-  /// Minimum network fee the wallet must use for this method, in the
-  /// method's unit: gas price in wei for EVM methods, sat/vB for Bitcoin.
+  /// Minimum network fee the wallet must use for this method, in the fee
+  /// unit of its chain.
   final num minFee;
 
   /// Asset tickers accepted under this method, ex: ["BTC"], ["ETH", "USDT"].

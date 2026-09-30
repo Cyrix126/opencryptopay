@@ -10,24 +10,27 @@ import 'sample_data/open_crypto_pay_payment_details_json.dart';
 
 /// Minimal [CryptoCoin] for tests.
 class _Coin implements CryptoCoin {
-  const _Coin(this.ticker, this.prettyName);
+  const _Coin(this.ticker, this.prettyName,
+      [this.chainType = CryptoChainType.other]);
   @override
   final String ticker;
   @override
   final String prettyName;
   @override
+  final CryptoChainType chainType;
+  @override
   String get displayName => ticker;
 }
 
-const _btc = _Coin('BTC', 'Bitcoin');
-const _eth = _Coin('ETH', 'Ethereum');
+const _btc = _Coin('BTC', 'Bitcoin', CryptoChainType.bitcoinDerived);
+const _eth = _Coin('ETH', 'Ethereum', CryptoChainType.evm);
 const _xmr = _Coin('XMR', 'Monero');
-const _firo = _Coin('FIRO', 'Firo');
+const _firo = _Coin('FIRO', 'Firo', CryptoChainType.bitcoinDerived);
 const _ada = _Coin('ADA', 'Cardano');
 const _sol = _Coin('SOL', 'Solana');
-const _doge = _Coin('DOGE', 'Dogecoin');
-const _ltc = _Coin('LTC', 'Litecoin');
-const _usdt = _Coin('USDT', 'Ethereum');
+const _doge = _Coin('DOGE', 'Dogecoin', CryptoChainType.bitcoinDerived);
+const _ltc = _Coin('LTC', 'Litecoin', CryptoChainType.bitcoinDerived);
+const _usdt = _Coin('USDT', 'Ethereum', CryptoChainType.evm);
 
 /// Build a `package:http` [MockClient] that returns [response] for every GET.
 Client _mockHttpReturning(Response response) =>
@@ -874,13 +877,26 @@ void main() {
       );
     });
 
-    test('the session carries the matched method minFee', () async {
+    test('the session carries the matched method minFee and its unit',
+        () async {
       final success = await _controller(_mockTwoRequestFlow(
         txDetailsJson: _btcDetails,
       )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned)
           as OpenCryptoPaySuccess;
 
       expect(success.session.minFee, 2.146);
+      expect(success.minFeeUnit, OpenCryptoPayFeeUnit.satsPerVByte);
+
+      // The unit follows the chain type of the coin.
+      OpenCryptoPayFeeUnit unitFor(CryptoCoin coin) => OpenCryptoPaySession(
+            details: success.details,
+            coin: coin,
+            service: OpenCryptoPayService(
+              client: _mockHttpReturning(_res('{}', 200)),
+            ),
+          ).minFeeUnit;
+      expect(unitFor(_eth), OpenCryptoPayFeeUnit.weiPerGas);
+      expect(unitFor(_xmr), OpenCryptoPayFeeUnit.unknown);
     });
 
     test('session.submitProof completes on success, retains on failure',

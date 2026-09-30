@@ -1,6 +1,7 @@
 import 'package:decimal/decimal.dart';
 
 import 'coin.dart';
+import 'method_map.dart';
 import 'payment_details.dart';
 import 'session.dart';
 
@@ -72,6 +73,8 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
   OpenCryptoPayTransactionDetails get details => session.details;
 
   num get minFee => session.minFee;
+
+  OpenCryptoPayFeeUnit get minFeeUnit => session.minFeeUnit;
 
   CryptoCoin get coin => session.coin;
 
