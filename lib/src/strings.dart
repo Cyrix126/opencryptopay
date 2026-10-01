@@ -19,6 +19,16 @@ class OpenCryptoPayStrings {
   static const String lightningMessage =
       'This payment requires a Lightning invoice, which is not supported.';
 
+  static const String multipleTransactionsTitle = 'Unsupported payment';
+  static const String multipleTransactionsMessage =
+      'The payment request accepts one transaction, and this payment needs '
+      'several. Pay from another balance or wallet.';
+
+  static const String signedTransactionTitle = 'Unsupported payment';
+  static const String signedTransactionMessage =
+      'This payment requires a signed transaction, which is not supported for '
+      'this send. Pay from another balance or wallet.';
+
   static const String invalidAddressTitle = 'Invalid payment';
   static const String invalidAddressMessage =
       'The payment response did not contain a valid address.';
