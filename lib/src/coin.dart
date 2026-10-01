@@ -15,9 +15,8 @@ class CryptoCoin {
   const CryptoCoin({
     required this.ticker,
     required this.prettyName,
-    String? displayName,
     this.chainType = CryptoChainType.other,
-  }) : _displayName = displayName;
+  });
 
   /// Coin or token ticker symbol (ex: "BTC", "ETH", "USDT").
   /// Becomes the OpenCryptoPay `asset` value.
@@ -29,12 +28,4 @@ class CryptoCoin {
 
   /// Sets the unit of a provider's minimum fee.
   final CryptoChainType chainType;
-
-  final String? _displayName;
-
-  /// Short user-facing label for display (ex: "BTC", "USDT").
-  ///
-  /// Defaults to [ticker]; wallets with token contracts may set it to show
-  /// the token symbol instead of the chain name.
-  String get displayName => _displayName ?? ticker;
 }

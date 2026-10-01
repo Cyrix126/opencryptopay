@@ -9,6 +9,7 @@
 - Carry the per-method `minFee` on `SupportedMethod` and `OpenCryptoPaySession`; `CryptoCoin.chainType` sets its `minFeeUnit` (sat/vB for Bitcoin-derived chains, gas price in wei for EVM chains)
 - Decode LNURL with `blockchain_utils`, dropping the `bech32` git dependency
 - `OpenCryptoPayStrings` words a send that needs more than one transaction, or lacks the signed transaction the provider asked for
+- Remove `CryptoCoin.displayName`, which nothing read
 
 ## 0.3.0
 

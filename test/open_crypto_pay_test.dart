@@ -18,8 +18,6 @@ class _Coin implements CryptoCoin {
   final String prettyName;
   @override
   final CryptoChainType chainType;
-  @override
-  String get displayName => ticker;
 }
 
 const _btc = _Coin('BTC', 'Bitcoin', CryptoChainType.bitcoinDerived);
