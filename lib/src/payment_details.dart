@@ -283,7 +283,7 @@ class OpenCryptoPayTransactionDetails {
 
   /// Whether the wallet must broadcast the signed transaction itself before
   /// submitting proof.
-  bool get requiresBroadcast =>
+  bool get isBroadcastRequired =>
       proofType == OpenCryptoPayProofType.transactionHash;
 
   factory OpenCryptoPayTransactionDetails.fromJson(

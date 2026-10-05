@@ -123,10 +123,10 @@ class OpenCryptoPayController {
     final amountString = details.amount;
     if (amountString != null && amountString.isNotEmpty) {
       amount = Decimal.tryParse(amountString);
-      final valid = details.isRawAmount
+      final isAmountValid = details.isRawAmount
           ? BigInt.tryParse(amountString) != null
           : amount != null;
-      if (!valid) return const OpenCryptoPayInvalidAmount();
+      if (!isAmountValid) return const OpenCryptoPayInvalidAmount();
     }
 
     return OpenCryptoPaySuccess(

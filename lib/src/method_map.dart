@@ -75,10 +75,10 @@ List<CryptoCoin> ownedCoinsSupportingMethods({
     final key = m.method;
     final sm = byMethod[key];
     if (sm == null) continue;
-    final assetOk =
+    final isAssetSupported =
         sm.assets.isEmpty || sm.assets.any((a) => a == m.asset);
     final dedupKey = '$key:${m.asset}';
-    if (assetOk && seen.add(dedupKey)) {
+    if (isAssetSupported && seen.add(dedupKey)) {
       result.add(coin);
     }
   }

@@ -86,7 +86,7 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
 
   OpenCryptoPayProofType get proofType => details.proofType;
 
-  bool get requiresBroadcast => details.requiresBroadcast;
+  bool get isBroadcastRequired => details.isBroadcastRequired;
 
   /// The requested amount in the coin's/token's smallest unit
   /// ([fractionDigits] decimals), or null when the URI carries no amount.

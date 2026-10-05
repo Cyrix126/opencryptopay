@@ -196,7 +196,7 @@ class OpenCryptoPayService {
     required String txProof,
     String? quoteId,
   }) async {
-    if (!details.requiresBroadcast && details.isQuoteExpired) {
+    if (!details.isBroadcastRequired && details.isQuoteExpired) {
       throw OpenCryptoPayQuoteExpiredException(
         'The payment quote has expired; cannot submit signed transaction HEX.',
       );
@@ -207,7 +207,7 @@ class OpenCryptoPayService {
     final effectiveQuote = quoteId ?? details.quoteId;
     params['quote'] = effectiveQuote;
     params['method'] = coin.prettyName.replaceAll(' ', '');
-    if (details.requiresBroadcast) {
+    if (details.isBroadcastRequired) {
       params['tx'] = txProof;
     } else {
       params['hex'] = txProof;

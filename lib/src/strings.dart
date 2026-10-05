@@ -50,9 +50,9 @@ class OpenCryptoPayStrings {
       'Could not load this OpenCryptoPay payment.';
 
   static const String quoteExpiredTitle = 'Payment quote expired';
-  static String quoteExpiredMessage({bool paymentNotSent = false}) =>
+  static String quoteExpiredMessage({bool isPaymentUnsent = false}) =>
       'This payment quote has expired.'
-      '${paymentNotSent ? ' The payment was NOT sent.' : ''}'
+      '${isPaymentUnsent ? ' The payment was NOT sent.' : ''}'
       ' Ask the seller to create a new payment and scan the QR code again.';
 
   static const String proofFailedTitle = 'Seller not notified';
@@ -108,7 +108,7 @@ class OpenCryptoPayStrings {
   static ({String title, String message}) proofFailure(
     OpenCryptoPaySession session,
   ) {
-    if (session.requiresBroadcast) {
+    if (session.isBroadcastRequired) {
       return (title: proofFailedTitle, message: proofFailed);
     }
     return session.mayHoldPayment
@@ -124,6 +124,6 @@ class OpenCryptoPayStrings {
           ? (title: deliveryUnconfirmedTitle, message: deliveryUnconfirmed)
           : (
               title: quoteExpiredTitle,
-              message: quoteExpiredMessage(paymentNotSent: true),
+              message: quoteExpiredMessage(isPaymentUnsent: true),
             );
 }

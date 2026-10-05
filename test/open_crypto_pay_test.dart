@@ -389,7 +389,7 @@ void main() {
   });
 
   group('Proof type detection from hint', () {
-    test('HEX hint -> signedTransactionHex, requiresBroadcast false', () {
+    test('HEX hint -> signedTransactionHex, isBroadcastRequired false', () {
       final details = OpenCryptoPayTransactionDetails.fromJson(
         _btcDetails,
         apiUrl: _decodedApiUrl,
@@ -400,10 +400,10 @@ void main() {
       );
       expect(details.proofType,
           OpenCryptoPayProofType.signedTransactionHex);
-      expect(details.requiresBroadcast, isFalse);
+      expect(details.isBroadcastRequired, isFalse);
     });
 
-    test('hash hint -> transactionHash, requiresBroadcast true', () {
+    test('hash hint -> transactionHash, isBroadcastRequired true', () {
       final details = OpenCryptoPayTransactionDetails.fromJson(
         {
           'expiryDate': '2026-06-25T08:59:05.950Z',
@@ -420,7 +420,7 @@ void main() {
         quoteExpiration: DateTime.parse(_quoteExpiration),
       );
       expect(details.proofType, OpenCryptoPayProofType.transactionHash);
-      expect(details.requiresBroadcast, isTrue);
+      expect(details.isBroadcastRequired, isTrue);
     });
 
     test('case-insensitive "as hex" detection', () {
@@ -459,7 +459,7 @@ void main() {
       );
       expect(details.proofType,
           OpenCryptoPayProofType.signedTransactionHex);
-      expect(details.requiresBroadcast, isFalse);
+      expect(details.isBroadcastRequired, isFalse);
     });
   });
 
@@ -623,7 +623,7 @@ void main() {
       // Bitcoin hint asks for HEX → wallet must NOT broadcast.
       expect(success.proofType,
           OpenCryptoPayProofType.signedTransactionHex);
-      expect(success.requiresBroadcast, isFalse);
+      expect(success.isBroadcastRequired, isFalse);
     });
 
     test('check that the transaction detail url is constructed with the same quoteId'
@@ -680,7 +680,7 @@ void main() {
       expect(result, isA<OpenCryptoPaySuccess>());
       final success = result as OpenCryptoPaySuccess;
       expect(success.proofType, OpenCryptoPayProofType.transactionHash);
-      expect(success.requiresBroadcast, isTrue);
+      expect(success.isBroadcastRequired, isTrue);
     });
 
     test('404 on first request maps to no pending payment', () async {
@@ -1028,21 +1028,21 @@ void main() {
         final refusing = sessionWith(_mockHttpReturning(_res('bad', 400)));
         final refused = await fail(refusing);
         expect(refused.error, isA<OpenCryptoPayApiException>());
-        expect(refused.providerRejected, isTrue);
+        expect(refused.isRejectedByProvider, isTrue);
         expect(refusing.mayHoldPayment, isFalse);
         expect(OpenCryptoPayStrings.proofFailure(refusing).title,
             OpenCryptoPayStrings.deliveryFailedTitle);
 
         // A server error may come after the provider broadcast.
         final failing = sessionWith(_mockHttpReturning(_res('bad', 503)));
-        expect((await fail(failing)).providerRejected, isFalse);
+        expect((await fail(failing)).isRejectedByProvider, isFalse);
         expect(failing.mayHoldPayment, isTrue);
         expect(OpenCryptoPayStrings.proofFailure(failing).title,
             OpenCryptoPayStrings.deliveryUnconfirmedTitle);
 
         final unreachable = sessionWith(
             MockClient((_) async => throw Exception('socket closed')));
-        expect((await fail(unreachable)).providerRejected, isFalse);
+        expect((await fail(unreachable)).isRejectedByProvider, isFalse);
         expect(unreachable.mayHoldPayment, isTrue);
         expect(OpenCryptoPayStrings.proofFailure(unreachable).title,
             OpenCryptoPayStrings.deliveryUnconfirmedTitle);
@@ -1071,7 +1071,7 @@ void main() {
         await session.submitProof('signedHexDummy');
         final refused = await session.submitProof('signedHexDummy')
             as OpenCryptoPayProofFailed;
-        expect(refused.providerRejected, isTrue);
+        expect(refused.isRejectedByProvider, isTrue);
         expect(session.mayHoldPayment, isTrue);
         expect(OpenCryptoPayStrings.proofFailure(session).title,
             OpenCryptoPayStrings.deliveryUnconfirmedTitle);

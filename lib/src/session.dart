@@ -29,7 +29,7 @@ class OpenCryptoPayProofFailed extends OpenCryptoPayProofResult {
 
   /// Whether the provider refused the proof with a 4xx answer. After any
   /// other failure the provider may hold the payment.
-  bool get providerRejected => switch (error) {
+  bool get isRejectedByProvider => switch (error) {
         OpenCryptoPayApiException(:final statusCode?) =>
           statusCode >= 400 && statusCode < 500,
         _ => false,
@@ -58,11 +58,11 @@ class OpenCryptoPaySession {
         CryptoChainType.other => OpenCryptoPayFeeUnit.unknown,
       };
 
-  bool _completed = false;
+  bool _isCompleted = false;
   bool _mayHoldPayment = false;
 
   /// Whether the proof was already submitted successfully.
-  bool get isCompleted => _completed;
+  bool get isCompleted => _isCompleted;
 
   /// Whether a signed transaction whose submission failed may have reached
   /// the provider, so the payment may still go through.
@@ -72,14 +72,14 @@ class OpenCryptoPaySession {
 
   /// Whether the wallet must broadcast the transaction itself before
   /// submitting the proof.
-  bool get requiresBroadcast => details.requiresBroadcast;
+  bool get isBroadcastRequired => details.isBroadcastRequired;
 
   bool get isQuoteExpired => details.isQuoteExpired;
 
   /// Whether this session still awaits proof of a payment to
   /// [recipientAddress].
   bool isActivePaymentFor(String? recipientAddress) =>
-      !_completed &&
+      !_isCompleted &&
       details.address != null &&
       details.address == recipientAddress;
 
@@ -87,22 +87,22 @@ class OpenCryptoPaySession {
   /// [proofType]: the broadcast transaction's id
   /// ([OpenCryptoPayProofType.transactionHash]), or the signed raw transaction
   /// hex ([OpenCryptoPayProofType.signedTransactionHex]) which the provider
-  /// broadcasts itself ([requiresBroadcast] is false).
+  /// broadcasts itself ([isBroadcastRequired] is false).
   Future<OpenCryptoPayProofResult> submitProof(String txProof) async {
-    if (_completed) return const OpenCryptoPayProofAccepted();
+    if (_isCompleted) return const OpenCryptoPayProofAccepted();
     try {
       await _service.submitTransactionProof(
         details: details,
         coin: coin,
         txProof: txProof,
       );
-      _completed = true;
+      _isCompleted = true;
       return const OpenCryptoPayProofAccepted();
     } on OpenCryptoPayQuoteExpiredException catch (e) {
       return OpenCryptoPayProofQuoteExpired(e);
     } catch (e) {
       final failed = OpenCryptoPayProofFailed(e);
-      if (!requiresBroadcast && !failed.providerRejected) {
+      if (!isBroadcastRequired && !failed.isRejectedByProvider) {
         _mayHoldPayment = true;
       }
       return failed;
