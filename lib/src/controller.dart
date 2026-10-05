@@ -111,7 +111,17 @@ class OpenCryptoPayController {
       return const OpenCryptoPayLightning();
     }
 
-    final address = details.address;
+    // Fail before the payment when the payment URI cannot be read.
+    final String? address;
+    final String? amountString;
+    try {
+      address = details.address;
+      amountString = details.amount;
+    } catch (e, s) {
+      onError?.call(e, s);
+      return OpenCryptoPayError(isDecodeError: false, error: e);
+    }
+
     if (address == null || address.isEmpty) {
       return const OpenCryptoPayInvalidAddress();
     }
@@ -120,7 +130,6 @@ class OpenCryptoPayController {
     final recipientLabel = displayName.isNotEmpty ? displayName : address;
 
     Decimal? amount;
-    final amountString = details.amount;
     if (amountString != null && amountString.isNotEmpty) {
       amount = Decimal.tryParse(amountString);
       final isAmountValid = details.isRawAmount

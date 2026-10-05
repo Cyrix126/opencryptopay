@@ -100,6 +100,21 @@ void main() {
       expect(OpenCryptoPayService.isOpenCryptoPayUri(null), isFalse);
     });
 
+    test('rejects a link whose query is not valid UTF-8', () {
+      expect(
+        OpenCryptoPayService.isOpenCryptoPayUri(
+          'https://shop.example/?n=Caf%E9',
+        ),
+        isFalse,
+      );
+      expect(
+        OpenCryptoPayService.isOpenCryptoPayUri(
+          'https://pay.example.com/pl/?lightning=$_lnurl&n=Caf%E9',
+        ),
+        isFalse,
+      );
+    });
+
     test('extracts the lightning (LNURL) query parameter', () {
       expect(OpenCryptoPayService.extractLnurl(_qrLink), _lnurl);
     });
@@ -747,6 +762,18 @@ void main() {
           OpenCryptoPayStrings.invalidAmountTitle,
         );
       }
+    });
+
+    test('an undecodable payment URI query maps to an error', () async {
+      final result = await _controller(_mockTwoRequestFlow(
+        txDetailsJson: {
+          ..._btcDetails,
+          'uri': 'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
+              '?amount=0.5&label=Caf%E9',
+        },
+      )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+
+      expect(result, isA<OpenCryptoPayError>());
     });
 
     test('unsupported coin maps to unsupported result with alternatives',

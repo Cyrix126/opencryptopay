@@ -26,7 +26,13 @@ class OpenCryptoPayService {
     if (!uri.isScheme('https')) {
       return false;
     }
-    final lnurl = uri.queryParameters['lightning'];
+    final String? lnurl;
+    try {
+      lnurl = uri.queryParameters['lightning'];
+    } on FormatException {
+      // A percent escape in the query does not decode to UTF-8.
+      return false;
+    }
     if (lnurl == null || lnurl.isEmpty) return false;
     final path = uri.path.endsWith('/')
         ? uri.path.substring(0, uri.path.length - 1)

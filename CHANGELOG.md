@@ -11,6 +11,7 @@
 - `OpenCryptoPayStrings` words a send that needs more than one transaction, or lacks the signed transaction the provider asked for
 - Remove `CryptoCoin.displayName`, which nothing read
 - `OpenCryptoPaySession.recordFailedBroadcast` marks a payment whose broadcast failed as possibly sent, which `mayHoldPayment` reports; a failed hash proof does too, since the wallet broadcast the payment
+- `isOpenCryptoPayUri` returns false for a link whose query is not valid UTF-8, where it threw a `FormatException`; `run()` returns `OpenCryptoPayError` for a payment URI with such a query, where it threw too
 - Rename `requiresBroadcast` to `isBroadcastRequired`, and the `paymentNotSent` parameter of `OpenCryptoPayStrings.quoteExpiredMessage` to `isPaymentUnsent`
 
 ## 0.3.0
