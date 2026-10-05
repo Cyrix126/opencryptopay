@@ -64,8 +64,8 @@ class OpenCryptoPaySession {
   /// Whether the proof was already submitted successfully.
   bool get isCompleted => _isCompleted;
 
-  /// Whether a signed transaction whose submission failed may have reached
-  /// the provider, so the payment may still go through.
+  /// Whether a transaction whose broadcast or submission failed may have
+  /// reached the network or the provider, so the payment may still go through.
   bool get mayHoldPayment => _mayHoldPayment;
 
   OpenCryptoPayProofType get proofType => details.proofType;
@@ -82,6 +82,10 @@ class OpenCryptoPaySession {
       !_isCompleted &&
       details.address != null &&
       details.address == recipientAddress;
+
+  /// Records that the wallet's broadcast of the payment failed. The
+  /// transaction may still have reached the network.
+  void recordFailedBroadcast() => _mayHoldPayment = true;
 
   /// Submit the proof of payment.
   /// [proofType]: the broadcast transaction's id
@@ -102,7 +106,8 @@ class OpenCryptoPaySession {
       return OpenCryptoPayProofQuoteExpired(e);
     } catch (e) {
       final failed = OpenCryptoPayProofFailed(e);
-      if (!isBroadcastRequired && !failed.isRejectedByProvider) {
+      // A hash proof follows the wallet's own broadcast.
+      if (isBroadcastRequired || !failed.isRejectedByProvider) {
         _mayHoldPayment = true;
       }
       return failed;

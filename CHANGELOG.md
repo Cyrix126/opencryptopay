@@ -10,6 +10,7 @@
 - Decode LNURL with `blockchain_utils`, dropping the `bech32` git dependency
 - `OpenCryptoPayStrings` words a send that needs more than one transaction, or lacks the signed transaction the provider asked for
 - Remove `CryptoCoin.displayName`, which nothing read
+- `OpenCryptoPaySession.recordFailedBroadcast` marks a payment whose broadcast failed as possibly sent, which `mayHoldPayment` reports; a failed hash proof does too, since the wallet broadcast the payment
 - Rename `requiresBroadcast` to `isBroadcastRequired`, and the `paymentNotSent` parameter of `OpenCryptoPayStrings.quoteExpiredMessage` to `isPaymentUnsent`
 
 ## 0.3.0

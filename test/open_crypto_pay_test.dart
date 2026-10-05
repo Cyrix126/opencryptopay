@@ -936,6 +936,39 @@ void main() {
       });
     });
 
+    test('a failed hash proof marks the broadcast payment as possibly held',
+        () async {
+      final details = OpenCryptoPayTransactionDetails.fromJson(
+        {
+          'blockchain': 'Monero',
+          'uri':
+              'monero:88fWDB31A4s5bV46r7zxKnVqmrh3T1Lk1EF3A9KzEEaFfHF1n4znQ2U9qK5PJxR2RSSQshkxLZVnSdZe2ZwLSPVqGxxnq9u?tx_amount=0.00394642',
+          'hint':
+              'Use this data to create a transaction and sign it. Broadcast the signed transaction to the blockchain and send the transaction hash back via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e',
+        },
+        apiUrl: _decodedApiUrl,
+        displayName: 'Test Shop',
+        quoteId: 'plq_62b1865ed28358be',
+        callback: _callbackUrl,
+        quoteExpiration: DateTime.parse(_quoteExpiration),
+      );
+      final session = OpenCryptoPaySession(
+        details: details,
+        coin: _xmr,
+        service: OpenCryptoPayService(
+          client: _mockHttpReturning(_res('down', 503)),
+        ),
+      );
+
+      expect(await session.submitProof('txHashDummy'),
+          isA<OpenCryptoPayProofFailed>());
+      expect(session.mayHoldPayment, isTrue);
+      expect(
+        OpenCryptoPayStrings.quoteExpiredAtSend(session).title,
+        OpenCryptoPayStrings.deliveryUnconfirmedTitle,
+      );
+    });
+
     test('submitProof sends the signed HEX to the /tx endpoint derived from '
         'the callback', () async {
       await withClock(fixedClock, () async {
@@ -1098,6 +1131,35 @@ void main() {
         expect(notSent.message, contains('NOT sent'));
 
         await session.submitProof('signedHexDummy');
+        expect(OpenCryptoPayStrings.quoteExpiredAtSend(session).title,
+            OpenCryptoPayStrings.deliveryUnconfirmedTitle);
+      });
+    });
+
+    test('an expired quote at send reports a possibly sent broadcast',
+        () async {
+      await withClock(fixedClock, () async {
+        final success = await _controller(_mockTwoRequestFlow(
+          txDetailsJson: {
+            ..._btcDetails,
+            'hint': 'Broadcast the signed transaction to the blockchain and '
+                'send the transaction hash back.',
+          },
+        )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned)
+            as OpenCryptoPaySuccess;
+        final session = OpenCryptoPaySession(
+          details: success.details,
+          coin: success.coin,
+          service: OpenCryptoPayService(
+            client: _mockHttpReturning(_res('ok', 200)),
+          ),
+        );
+        expect(session.isBroadcastRequired, isTrue);
+        expect(OpenCryptoPayStrings.quoteExpiredAtSend(session).title,
+            OpenCryptoPayStrings.quoteExpiredTitle);
+
+        session.recordFailedBroadcast();
+        expect(session.mayHoldPayment, isTrue);
         expect(OpenCryptoPayStrings.quoteExpiredAtSend(session).title,
             OpenCryptoPayStrings.deliveryUnconfirmedTitle);
       });
