@@ -196,7 +196,7 @@ class OpenCryptoPayService {
     return base.replace(pathSegments: segments);
   }
 
-  Future<bool> submitTransactionProof({
+  Future<void> submitTransactionProof({
     required OpenCryptoPayTransactionDetails details,
     required CryptoCoin coin,
     required String txProof,
@@ -230,7 +230,7 @@ class OpenCryptoPayService {
     }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return true;
+      return;
     }
 
     throw OpenCryptoPayApiException(
