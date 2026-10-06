@@ -33,6 +33,13 @@ const _sol = _Coin('SOL', 'Solana');
 const _doge = _Coin('DOGE', 'Dogecoin', CryptoChainType.bitcoinDerived);
 const _ltc = _Coin('LTC', 'Litecoin', CryptoChainType.bitcoinDerived);
 const _usdt = _Coin('USDT', 'Ethereum', CryptoChainType.evm);
+const _zchf = _Coin('ZCHF', 'Polygon', CryptoChainType.evm);
+const _bnb = _Coin('BNB', 'Binance Smart Chain', CryptoChainType.evm);
+const _trx = _Coin('TRX', 'Tron');
+const _spark = _Coin('BTC', 'Spark');
+const _icp = _Coin('ICP', 'Internet Computer');
+const _lightning = _Coin('BTC', 'Lightning');
+const _binancePay = _Coin('USDT', 'Binance Pay');
 
 /// Build a `package:http` [MockClient] that returns [response] for every GET.
 Client _mockHttpReturning(Response response) =>
@@ -63,6 +70,19 @@ const _btcDetails = {
 };
 const _callbackUrl = 'https://api.dfx.swiss/v1/lnurlp/cb/pl_beeddb41cd4b6d9e';
 const _quoteExpiration = '2026-06-24T08:37:49.704Z';
+
+// Hints of the DFX demo payment link.
+const _dfxHexHint =
+    'Use this data to create a transaction and sign it. Send the signed transaction back as HEX via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e. We check the transferred HEX and broadcast the transaction to the blockchain.';
+const _dfxFiroHint =
+    'Use this data to create a transaction and sign it. Either send the signed transaction back as HEX via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e, or broadcast the transaction yourself and send the transaction hash (txId) back via the same endpoint.';
+const _dfxHashHint =
+    'Use this data to create a transaction and sign it. Broadcast the signed transaction to the blockchain and send the transaction hash back via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e';
+const _dfxSparkHint =
+    'Pay the URI on Spark and send the transfer ID back as the tx parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e';
+const _dfxInternetComputerHint =
+    'Approve the address from the URI for the required amount plus transfer fee using icrc2_approve. Then send your Principal ID as the sender parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e.';
+
 void main() {
   final fixedTime = DateTime.utc(2026, 6, 24, 8);
   final fixedClock = Clock.fixed(fixedTime);
@@ -119,14 +139,6 @@ void main() {
       );
     });
 
-    test('extracts the lightning (LNURL) query parameter', () {
-      expect(OpenCryptoPayService.extractLnurl(_qrLink), _lnurl);
-    });
-
-    test('decodes an LNURL (LUD-01) to its API URL', () {
-      expect(OpenCryptoPayService.decodeLnurl(_lnurl), _decodedApiUrl);
-    });
-
     test('upgrades an http API URL to https', () {
       final lnurl = Bech32Encoder.encode(
         'lnurl',
@@ -181,14 +193,6 @@ void main() {
   });
 
   group('OpenCryptoPay transaction proof URL building', () {
-    test('replaces the /cb path segment of the callback with /tx', () {
-      final url = OpenCryptoPayService.buildTransactionProofUrl(_callbackUrl);
-      expect(
-        url.toString(),
-        'https://api.dfx.swiss/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
-      );
-    });
-
     test('only rewrites the path, not a "cb" elsewhere in the URL', () {
       final url = OpenCryptoPayService.buildTransactionProofUrl(
         'https://cb.example.com/v1/lnurlp/cb/pl_x?shop=cb',
@@ -649,33 +653,23 @@ void main() {
     // Hints returned by the DFX demo payment link for each method, with the
     // proof type the library must detect. Lightning returns no hint and
     // BinancePay returned an error.
-    const dfxHexHint =
-        'Use this data to create a transaction and sign it. Send the signed transaction back as HEX via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e. We check the transferred HEX and broadcast the transaction to the blockchain.';
-    const dfxFiroHint =
-        'Use this data to create a transaction and sign it. Either send the signed transaction back as HEX via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e, or broadcast the transaction yourself and send the transaction hash (txId) back via the same endpoint.';
-    const dfxHashHint =
-        'Use this data to create a transaction and sign it. Broadcast the signed transaction to the blockchain and send the transaction hash back via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e';
-    const dfxSparkHint =
-        'Pay the URI on Spark and send the transfer ID back as the tx parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e';
-    const dfxInternetComputerHint =
-        'Approve the address from the URI for the required amount plus transfer fee using icrc2_approve. Then send your Principal ID as the sender parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e.';
     const hex = OpenCryptoPayProofType.signedTransactionHex;
     const hash = OpenCryptoPayProofType.transactionHash;
     const dfxHints = {
-      'Ethereum': (dfxHexHint, hex),
-      'Polygon': (dfxHexHint, hex),
-      'Arbitrum': (dfxHexHint, hex),
-      'Optimism': (dfxHexHint, hex),
-      'Base': (dfxHexHint, hex),
-      'BinanceSmartChain': (dfxHexHint, hex),
-      'Bitcoin': (dfxHexHint, hex),
-      'Firo': (dfxFiroHint, hex),
-      'Monero': (dfxHashHint, hash),
-      'Solana': (dfxHashHint, hash),
-      'Tron': (dfxHashHint, hash),
-      'Cardano': (dfxHashHint, hash),
-      'Spark': (dfxSparkHint, hash),
-      'InternetComputer': (dfxInternetComputerHint, null),
+      'Ethereum': (_dfxHexHint, hex),
+      'Polygon': (_dfxHexHint, hex),
+      'Arbitrum': (_dfxHexHint, hex),
+      'Optimism': (_dfxHexHint, hex),
+      'Base': (_dfxHexHint, hex),
+      'BinanceSmartChain': (_dfxHexHint, hex),
+      'Bitcoin': (_dfxHexHint, hex),
+      'Firo': (_dfxFiroHint, hex),
+      'Monero': (_dfxHashHint, hash),
+      'Solana': (_dfxHashHint, hash),
+      'Tron': (_dfxHashHint, hash),
+      'Cardano': (_dfxHashHint, hash),
+      'Spark': (_dfxSparkHint, hash),
+      'InternetComputer': (_dfxInternetComputerHint, null),
     };
     for (final MapEntry(key: method, value: (hint, proofType))
         in dfxHints.entries) {
@@ -928,23 +922,9 @@ void main() {
       expect(result, isA<OpenCryptoPayNoPending>());
     });
 
-    test('lightning response maps to lightning result', () async {
-      final controller = _controller(_mockTwoRequestFlow(
-        txDetailsJson: {'pr': 'lnbc1...'},
-      ));
-
-      final result = await controller.run(
-        qrData: _qrLink,
-        coin: _btc,
-        ownedCoins: owned,
-      );
-
-      expect(result, isA<OpenCryptoPayLightning>());
-    });
-
     test('missing address maps to an invalid address result', () async {
       final controller = _controller(_mockTwoRequestFlow(
-        txDetailsJson: {'blockchain': 'Bitcoin', 'hint': _btcDetails['hint']},
+        txDetailsJson: {'blockchain': 'Bitcoin', 'hint': _dfxHexHint},
       ));
 
       final result = await controller.run(
@@ -971,7 +951,7 @@ void main() {
           txDetailsJson: {
             'blockchain': 'Bitcoin',
             'uri': uri,
-            'hint': _btcDetails['hint'],
+            'hint': _dfxHexHint,
           },
         ));
 
@@ -1452,54 +1432,6 @@ void main() {
       });
     });
 
-    test('a Spark retry reports the transfer under a new quote', () async {
-      final details = OpenCryptoPayTransactionDetails.fromJson(
-        {
-          'blockchain': 'Spark',
-          'hint':
-              'Pay the URI on Spark and send the transfer ID back as the tx parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e',
-        },
-        apiUrl: _decodedApiUrl,
-        displayName: 'Test Shop',
-        quoteId: 'plq_62b1865ed28358be',
-        callback: _callbackUrl,
-        quoteExpiration: DateTime.parse(_quoteExpiration),
-      );
-      final requests = <Uri>[];
-      final session = OpenCryptoPaySession(
-        details: details,
-        coin: const _Coin('BTC', 'Spark'),
-        service: OpenCryptoPayService(
-          client: _mockHttpWithHandler((url) {
-            requests.add(url);
-            if (url.toString() == _decodedApiUrl) {
-              return _res(
-                jsonEncode({
-                  ...paymentDetailsJson,
-                  'quote': {'id': 'plq_new', 'expiration': _quoteExpiration},
-                }),
-                200,
-              );
-            }
-            // The first quote rejected the transfer.
-            final isNewQuote = url.queryParameters['quote'] == 'plq_new';
-            return _res('{}', isNewQuote ? 200 : 400);
-          }),
-        ),
-      );
-
-      expect(await session.submitProof('transferId'),
-          isA<OpenCryptoPayProofFailed>());
-      expect(await session.submitProof('transferId'),
-          isA<OpenCryptoPayProofAccepted>());
-      expect(requests.map((url) => url.path), [
-        '/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
-        '/v1/lnurlp/pl_beeddb41cd4b6d9e',
-        '/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
-      ]);
-      expect(requests.last.queryParameters['tx'], 'transferId');
-    });
-
     test('proof failure message depends on whether the wallet broadcast',
         () async {
       await withClock(fixedClock, () async {
@@ -1705,6 +1637,445 @@ void main() {
     });
   });
 
+  // One test per statement of the OpenCryptoPay README. Where DFX production
+  // answers differently, the test follows production.
+  group('README', () {
+    final beforeQuoteExpiry = Clock.fixed(DateTime.utc(2025, 7, 16, 1));
+
+    group('1. QR code decoding', () {
+      test('the lightning parameter of the QR link holds the LNURL', () {
+        expect(OpenCryptoPayService.isOpenCryptoPayUri(_qrLink), isTrue);
+        expect(OpenCryptoPayService.extractLnurl(_qrLink), _lnurl);
+      });
+
+      test('any domain can offer the service', () async {
+        final lnurl = Bech32Encoder.encode(
+          'lnurl',
+          utf8.encode('https://api.example.com/v1/lnurlp/pl_x'),
+        ).toUpperCase();
+        final provider = _Provider(
+          info: {
+            ..._readmeInfo,
+            'callback': 'https://api.example.com/v1/lnurlp/cb/pl_x',
+          },
+          details: _readmeEthereum,
+        );
+
+        final result = await provider.run(
+          _eth,
+          qrData: 'https://pay.example.com/pl/?lightning=$lnurl',
+        );
+
+        expect(result, isA<OpenCryptoPaySuccess>());
+        expect(provider.requests.map((url) => url.host),
+            everyElement('api.example.com'));
+      });
+    });
+
+    group('2. Payment details', () {
+      test('the LNURL decodes to the API URL', () {
+        expect(OpenCryptoPayService.decodeLnurl(_lnurl), _decodedApiUrl);
+      });
+
+      test(
+          'the payment details carry the recipient, quote, methods and callback',
+          () {
+        final info = OpenCryptoPayPaymentInfo.fromJson(
+          _readmeInfo,
+          apiUrl: _decodedApiUrl,
+        );
+
+        expect(info.recipient?.name, 'My Company');
+        expect(info.quoteId, 'plq_d170b11b44340eb1');
+        expect(info.quoteExpiration, DateTime.utc(2025, 7, 16, 1, 20, 6, 476));
+        expect(info.supportedMethods.map((method) => method.method),
+            contains('Ethereum'));
+        expect(info.callback, _callbackUrl);
+      });
+
+      test('an unavailable method is not offered', () async {
+        final provider = _Provider();
+
+        expect(await provider.run(const _Coin('BTC', 'Taproot Asset')),
+            isA<OpenCryptoPayUnsupported>());
+        expect(provider.requests, hasLength(1));
+      });
+
+      test('the recipient carries its registration number', () {
+        final info = OpenCryptoPayPaymentInfo.fromJson(
+          _readmeInfo,
+          apiUrl: _decodedApiUrl,
+        );
+
+        expect(info.recipient?.registrationNumber, 'CHE-123.456.789');
+      });
+
+      test('an expired quote is not used, and the user scans again', () async {
+        final provider = _Provider(details: _readmeEthereum);
+        final success = await provider.run(_eth) as OpenCryptoPaySuccess;
+
+        await withClock(Clock.fixed(DateTime.utc(2025, 7, 17)), () async {
+          expect(await success.session.submitProof('0xsigned'),
+              isA<OpenCryptoPayProofQuoteExpired>());
+        });
+        expect(provider.requests.where(_isProof), isEmpty);
+        expect(OpenCryptoPayStrings.quoteExpiredAtSend(success.session).message,
+            contains('scan the QR code again'));
+      });
+
+      test('the payment details request keeps the wait for a pending payment',
+          () async {
+        final provider = _Provider(details: _readmeEthereum);
+        await provider.run(_eth);
+
+        expect(provider.requests.first.queryParameters,
+            isNot(contains('timeout')));
+      });
+
+      test('a 404 means no pending payment', () async {
+        final provider = _Provider(
+          info: {
+            'statusCode': 404,
+            'message': 'No pending payment found',
+            'error': 'Not Found',
+          },
+          infoStatus: 404,
+        );
+
+        expect(await provider.run(_eth), isA<OpenCryptoPayNoPending>());
+      });
+    });
+
+    group('3. Transaction details', () {
+      test('the details URL is the callback with the quote, method and asset',
+          () {
+        final url = OpenCryptoPayService.buildTransactionDetailsUrl(
+          callback: _callbackUrl,
+          coin: _eth,
+          quoteId: 'plq_9af8927afe14f2d0',
+        );
+
+        expect(
+          url.toString(),
+          'https://api.dfx.swiss/v1/lnurlp/cb/pl_beeddb41cd4b6d9e'
+          '?quote=plq_9af8927afe14f2d0&method=Ethereum&asset=ETH',
+        );
+      });
+
+      test('EVM, Bitcoin and Firo details ask for the signed transaction',
+          () async {
+        for (final (coin, details, address) in [
+          (_eth, _readmeEthereum, '0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC'),
+          // DFX production
+          (_btc, _btcDetails, 'bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'),
+          (
+            _zchf,
+            {
+              'blockchain': 'Polygon',
+              'uri': 'ethereum:0x02567e4b14b25549331fcee2b56c647a8bab16fd@137'
+                  '/transfer?address=0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC'
+                  '&uint256=1000000000000000000',
+              'hint': _dfxHexHint,
+            },
+            '0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC',
+          ),
+          // Production Firo also takes the transaction hash.
+          (
+            _firo,
+            {
+              'blockchain': 'Firo',
+              'uri':
+                  'firo:aCPrA7sqb3QN2EH8q6XUVqE9kEGJsqq5wn?amount=1.14487149',
+              'hint': _dfxFiroHint,
+            },
+            'aCPrA7sqb3QN2EH8q6XUVqE9kEGJsqq5wn',
+          ),
+        ]) {
+          final success = await _Provider(details: details).run(coin)
+              as OpenCryptoPaySuccess;
+
+          expect(success.address, address, reason: coin.prettyName);
+          expect(success.proofType, OpenCryptoPayProofType.signedTransactionHex,
+              reason: coin.prettyName);
+        }
+      });
+
+      test(
+          'Monero, Zano, Solana, Tron and Cardano details ask for the '
+          'transaction hash', () async {
+        for (final (coin, details) in [
+          (_ada, _readmeCardano),
+          // DFX production
+          (
+            _xmr,
+            {
+              'blockchain': 'Monero',
+              'uri':
+                  'monero:88fWDB31A4s5bV46r7zxKnVqmrh3T1Lk1EF3A9KzEEaFfHF1n4zn'
+                      'Q2U9qK5PJxR2RSSQshkxLZVnSdZe2ZwLSPVqGxxnq9u'
+                      '?tx_amount=0.00215578',
+              'hint': _dfxHashHint,
+            },
+          ),
+          (
+            _sol,
+            {
+              'blockchain': 'Solana',
+              'uri': 'solana:2eQ2Somiat63oqSPwzQLrrNiceC8F6TH85dt2qDe3z36'
+                  '?amount=0.01009715',
+              'hint': _dfxHashHint,
+            },
+          ),
+          (
+            _trx,
+            {
+              'blockchain': 'Tron',
+              'uri': 'tron:TMBbmTrNYj16HjKzN1tsm2EaT7mzuTvSAL?amount=3.61011',
+              'hint': _dfxHashHint,
+            },
+          ),
+        ]) {
+          final success = await _Provider(details: details).run(coin)
+              as OpenCryptoPaySuccess;
+
+          expect(success.proofType, OpenCryptoPayProofType.transactionHash,
+              reason: coin.prettyName);
+        }
+      });
+
+      test('Spark details ask for the transfer ID', () async {
+        final success = await _Provider(details: _productionSpark).run(_spark)
+            as OpenCryptoPaySuccess;
+
+        expect(success.address,
+            'spark1pgss9cx833p3ls8s4536eav8vh0q6c8ctjd7a75666r2jmvrj4rgpuqe0xfm9r');
+        expect(success.proofType, OpenCryptoPayProofType.transactionHash);
+      });
+
+      test('Internet Computer is reported as unsupported', () async {
+        for (final uri in [
+          'icp:6bf47-...-cai?amount=0.08415',
+          // DFX production
+          'icp:ryjl3-tyaaa-aaaaa-aaaba-cai/transfer'
+              '?to=ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae'
+              '&amount=0.34772601',
+        ]) {
+          final result = await _Provider(details: {
+            'blockchain': 'InternetComputer',
+            'uri': uri,
+            'hint': _dfxInternetComputerHint,
+          }).run(_icp);
+
+          expect(result, isA<OpenCryptoPayUnknownProofType>(), reason: uri);
+        }
+      });
+
+      test('Lightning details carry an invoice, reported as unsupported',
+          () async {
+        final provider = _Provider(details: {
+          'pr': 'lnbc12590n1p5p8p66pp5eh5manf8yj39ktlfm7h9y4uzph0wjnt6ngu2c709s9'
+              'z5wndrfxkshp5kyucf7yxx97e0axrwke7xdy599csdhy67jd5pysz2n3m4d636c'
+              'gqcqzzsxqzgvsp5wl7m20pwux8p49cumznt2vk3p6x08h0vshnpf2ckqzkwfw6f'
+              'jdms9qyyssqy4mtye0fekxpgcjftmtqqre43xewmnsu94xmkq4yr8yfuj8se4yn'
+              'd57s3etcdt3qwrrzx9x2qfm0kpz6kj9wy6ys328znrdvsq6mzrcpw0nfqs',
+        });
+
+        expect(await provider.run(_lightning), isA<OpenCryptoPayLightning>());
+      });
+
+      test('BinancePay is reported as unsupported', () async {
+        final readme = _Provider(details: {
+          'expiryDate': '2025-05-01T14:34:40.881Z',
+          'uri': 'bnc://app.binance.com/payment/secpay'
+              '?tempToken=IzjFLlGOoHAdeUth9FurNGjONDeI5Hq9',
+          'hint': 'Pay in the Binance app by following the deep link '
+              'bnc://app.binance.com/payment/secpay'
+              '?tempToken=IzjFLlGOoHAdeUth9FurNGjONDeI5Hq9.',
+        });
+        // DFX production fails to create the order.
+        final production = _Provider(
+          details: {
+            'statusCode': 503,
+            'message': 'Failed to create order: The sub-merchant does not '
+                'exist or is in an unavailable state.',
+            'error': 'Service Unavailable',
+          },
+          detailsStatus: 503,
+        );
+
+        expect(await readme.run(_binancePay),
+            isA<OpenCryptoPayUnknownProofType>());
+        expect(await production.run(_binancePay), isA<OpenCryptoPayError>());
+      });
+
+      test('the transaction details share the quote and its expiration',
+          () async {
+        final success = await _Provider(details: _readmeEthereum).run(_eth)
+            as OpenCryptoPaySuccess;
+
+        expect(success.details.quoteId, 'plq_d170b11b44340eb1');
+        expect(success.details.quoteExpiration,
+            DateTime.utc(2025, 7, 16, 1, 20, 6, 476));
+      });
+    });
+
+    group('4. Crypto transaction', () {
+      test('the minimum fee is in wei for EVM chains and sat/vB for Bitcoin',
+          () async {
+        final eth = await _Provider(details: _readmeEthereum).run(_eth)
+            as OpenCryptoPaySuccess;
+        final btc = await _Provider(details: _btcDetails).run(_btc)
+            as OpenCryptoPaySuccess;
+
+        expect((eth.minFee, eth.minFeeUnit),
+            (1682009661, OpenCryptoPayFeeUnit.weiPerGas));
+        expect((btc.minFee, btc.minFeeUnit),
+            (4.5, OpenCryptoPayFeeUnit.satsPerVByte));
+      });
+
+      // DFX wallets build the proof URL this way. The README examples and the
+      // DFX hints show the payment ID.
+      test('the proof URL is the callback with /cb replaced by /tx', () {
+        expect(
+          OpenCryptoPayService.buildTransactionProofUrl(_callbackUrl)
+              .toString(),
+          'https://api.dfx.swiss/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
+        );
+      });
+
+      test('a proof carries the quote, the exact method name and the hex or tx',
+          () async {
+        await withClock(beforeQuoteExpiry, () async {
+          for (final (coin, details, params) in [
+            (
+              _bnb,
+              _productionBsc,
+              {'method': 'BinanceSmartChain', 'hex': 'proof'},
+            ),
+            (
+              _ada,
+              _readmeCardano,
+              {'method': 'Cardano', 'tx': 'proof'},
+            ),
+          ]) {
+            final provider = _Provider(details: details);
+            final success = await provider.run(coin) as OpenCryptoPaySuccess;
+            await success.session.submitProof('proof');
+
+            expect(provider.requests.last.queryParameters,
+                {'quote': 'plq_d170b11b44340eb1', ...params});
+          }
+        });
+      });
+
+      test(
+          'EVM, Bitcoin and Firo: the provider broadcasts the hex, and a '
+          'success code completes the payment', () async {
+        await withClock(beforeQuoteExpiry, () async {
+          final success = await _Provider(details: _readmeEthereum).run(_eth)
+              as OpenCryptoPaySuccess;
+
+          expect(success.isBroadcastRequired, isFalse);
+          expect(await success.session.submitProof('0xsigned'),
+              isA<OpenCryptoPayProofAccepted>());
+          expect(success.session.isCompleted, isTrue);
+        });
+      });
+
+      test('BinanceSmartChain uses an ethereum: URI with chain ID 56',
+          () async {
+        final success = await _Provider(details: _productionBsc).run(_bnb)
+            as OpenCryptoPaySuccess;
+
+        expect(success.address, '0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC');
+        expect(success.amountInSmallestUnit(18), BigInt.from(1553320000000000));
+      });
+
+      test(
+          'Monero, Zano, Solana, Tron and Cardano: the wallet broadcasts, and '
+          'a success code completes the payment', () async {
+        final success = await _Provider(details: _readmeCardano).run(_ada)
+            as OpenCryptoPaySuccess;
+
+        expect(success.isBroadcastRequired, isTrue);
+        expect(await success.session.submitProof('txHash'),
+            isA<OpenCryptoPayProofAccepted>());
+        expect(success.session.isCompleted, isTrue);
+      });
+
+      test('Spark: the transfer pays exactly the URI amount', () async {
+        final success = await _Provider(details: _productionSpark).run(_spark)
+            as OpenCryptoPaySuccess;
+
+        expect(success.amountInSmallestUnit(8), BigInt.from(1418));
+      });
+
+      test(
+          'Spark: the transfer ID goes in the tx parameter, and a success code '
+          'accepts it', () async {
+        const transferId = '0198c2f4-7a1b-7c3d-9e2f-5a6b7c8d9e0f';
+        final provider = _Provider(details: _productionSpark);
+        final success = await provider.run(_spark) as OpenCryptoPaySuccess;
+
+        expect(await success.session.submitProof(transferId),
+            isA<OpenCryptoPayProofAccepted>());
+        expect(provider.requests.last.queryParameters, {
+          'quote': 'plq_d170b11b44340eb1',
+          'method': 'Spark',
+          'tx': transferId,
+        });
+      });
+
+      test(
+          'Spark: after an error, the same transfer ID is reported under a '
+          'new quote', () async {
+        final details = OpenCryptoPayTransactionDetails.fromJson(
+          _productionSpark,
+          apiUrl: _decodedApiUrl,
+          displayName: 'Test Shop',
+          quoteId: 'plq_62b1865ed28358be',
+          callback: _callbackUrl,
+          quoteExpiration: DateTime.parse(_quoteExpiration),
+        );
+        final requests = <Uri>[];
+        final session = OpenCryptoPaySession(
+          details: details,
+          coin: _spark,
+          service: OpenCryptoPayService(
+            client: _mockHttpWithHandler((url) {
+              requests.add(url);
+              if (url.toString() == _decodedApiUrl) {
+                return _res(
+                  jsonEncode({
+                    ...paymentDetailsJson,
+                    'quote': {'id': 'plq_new', 'expiration': _quoteExpiration},
+                  }),
+                  200,
+                );
+              }
+              // The first quote rejected the transfer.
+              final isNewQuote = url.queryParameters['quote'] == 'plq_new';
+              return _res('{}', isNewQuote ? 200 : 400);
+            }),
+          ),
+        );
+
+        expect(await session.submitProof('transferId'),
+            isA<OpenCryptoPayProofFailed>());
+        expect(OpenCryptoPayStrings.proofFailure(session).message,
+            contains('do not pay again'));
+        expect(await session.submitProof('transferId'),
+            isA<OpenCryptoPayProofAccepted>());
+        expect(requests.map((url) => url.path), [
+          '/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
+          '/v1/lnurlp/pl_beeddb41cd4b6d9e',
+          '/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
+        ]);
+        expect(requests.last.queryParameters['tx'], 'transferId');
+      });
+    });
+  });
+
   group('Properties', () {
     for (final flow in _Flow.values) {
       property('a ${flow.name} session stays safe under any provider answers',
@@ -1772,6 +2143,121 @@ void main() {
   });
 }
 
+/// The README payment details, cut to the fields these tests read. DFX
+/// production fills the asset lists the README leaves out.
+final _readmeInfo = {
+  'callback': _callbackUrl,
+  'displayName': 'Test Shop',
+  'recipient': {
+    'name': 'My Company',
+    'registrationNumber': 'CHE-123.456.789',
+  },
+  'quote': {
+    'id': 'plq_d170b11b44340eb1',
+    'expiration': '2025-07-16T01:20:06.476Z',
+    'payment': 'plp_f1ba466e2f1c0a4e',
+  },
+  'transferAmounts': [
+    _transfer('Lightning', 0, ['BTC']),
+    _transfer('Polygon', 36000000139,
+        ['dEURO', 'ZCHF', 'USDT', 'USDC', 'POL', 'WBTC']),
+    _transfer('Ethereum', 1682009661,
+        ['dEURO', 'ZCHF', 'USDT', 'USDC', 'DAI', 'ETH', 'WBTC']),
+    _transfer('BinanceSmartChain', 1000000000, ['USDT', 'USDC', 'DAI', 'BNB']),
+    _transfer('Bitcoin', 4.5, ['BTC']),
+    _transfer('Firo', 0, ['FIRO']),
+    _transfer('Monero', 0, ['XMR']),
+    _transfer('Zano', 0, ['ZANO']),
+    _transfer('Solana', 0, ['USDT', 'USDC', 'SOL']),
+    _transfer('Tron', 0, ['USDT', 'TRX']),
+    _transfer('Cardano', 0, ['ADA']),
+    _transfer('BinancePay', 0, ['USDT']),
+    _transfer('TaprootAsset', 0, [], isAvailable: false),
+    _transfer('Spark', 0, ['BTC']),
+    _transfer(
+        'InternetComputer', 0, ['ICP', 'ckBTC', 'ckETH', 'ckUSDC', 'ckUSDT']),
+  ],
+};
+
+Map<String, Object> _transfer(
+  String method,
+  num minFee,
+  List<String> assets, {
+  bool isAvailable = true,
+}) =>
+    {
+      'method': method,
+      'minFee': minFee,
+      'assets': [
+        for (final asset in assets) {'asset': asset},
+      ],
+      'available': isAvailable,
+    };
+
+const _readmeEthereum = {
+  'expiryDate': '2025-05-01T14:34:40.881Z',
+  'blockchain': 'Ethereum',
+  'uri': 'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@1'
+      '?value=660720000000000',
+  'hint': _dfxHexHint,
+};
+
+const _readmeCardano = {
+  'expiryDate': '2025-05-01T14:34:40.881Z',
+  'blockchain': 'Cardano',
+  'uri': 'cardano:addr1qyqjzchnayplhgueg33gukpp2max9gkge4gh6jly93a0dzcm67tl9f'
+      '0pkykty8my4j4hg8e9suj8nzdrjygmfy6c8d0skmaq5q?amount=4.883112',
+  'hint': _dfxHashHint,
+};
+
+const _productionBsc = {
+  'expiryDate': '2026-10-06T08:50:24.520Z',
+  'blockchain': 'BinanceSmartChain',
+  'uri': 'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@56'
+      '?value=1553320000000000',
+  'hint': _dfxHexHint,
+};
+
+const _productionSpark = {
+  'expiryDate': '2026-10-06T08:50:24.520Z',
+  'blockchain': 'Spark',
+  'uri': 'spark:spark1pgss9cx833p3ls8s4536eav8vh0q6c8ctjd7a75666r2jmvrj4rgpuqe'
+      '0xfm9r?amount=0.00001418',
+  'hint': _dfxSparkHint,
+};
+
+/// A provider that answers the payment details with [info], the transaction
+/// details with [details] and every proof with a success, and records each
+/// request.
+final class _Provider {
+  _Provider({
+    Map<String, Object?>? info,
+    this.infoStatus = 200,
+    this.details = const {},
+    this.detailsStatus = 200,
+  }) : info = info ?? _readmeInfo;
+
+  final Map<String, Object?> info;
+  final int infoStatus;
+  final Map<String, Object?> details;
+  final int detailsStatus;
+  final requests = <Uri>[];
+
+  Future<OpenCryptoPayResult> run(
+    CryptoCoin coin, {
+    String qrData = _qrLink,
+  }) {
+    final client = MockClient((request) async {
+      requests.add(request.url);
+      if (_isProof(request.url)) return _res('', 200);
+      return request.url.queryParameters.containsKey('method')
+          ? _res(jsonEncode(details), detailsStatus)
+          : _res(jsonEncode(info), infoStatus);
+    });
+    return _controller(client).run(qrData: qrData, coin: coin);
+  }
+}
+
 final _status = constantFrom([200, 400, 404, 500]);
 
 /// The sample payment info with up to three fields set to a malformed value,
@@ -1835,7 +2321,7 @@ enum _Answer { ok, refused, serverError, lost }
 enum _Flow {
   hex(_btc, 'Send the signed transaction back as HEX.'),
   hash(_xmr, 'Broadcast it and send the transaction hash back.'),
-  spark(_Coin('BTC', 'Spark'), 'Send the transfer ID as the tx parameter.');
+  spark(_spark, 'Send the transfer ID as the tx parameter.');
 
   const _Flow(this.coin, this.hint);
 
