@@ -80,40 +80,8 @@ class OpenCryptoPayService {
   Future<OpenCryptoPayPaymentInfo> fetchPaymentInfo({
     required String apiUrl,
   }) async {
-    final url = Uri.parse(apiUrl);
-
-    final Response response;
-    try {
-      response = await _client.get(url);
-    } catch (e) {
-      throw OpenCryptoPayApiException(
-        'Failed to reach OpenCryptoPay service: $e',
-      );
-    }
-
-    if (response.statusCode == 404) {
-      throw OpenCryptoPayNoPendingPaymentException(
-        _tryExtractMessage(response.body),
-      );
-    }
-
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw OpenCryptoPayApiException(
-        'OpenCryptoPay service returned HTTP ${response.statusCode}.',
-        statusCode: response.statusCode,
-      );
-    }
-
-    final Map<String, dynamic> json;
-    try {
-      json = jsonDecode(response.body) as Map<String, dynamic>;
-    } catch (e) {
-      throw OpenCryptoPayApiException(
-        'Could not parse OpenCryptoPay response.',
-      );
-    }
-
-    return OpenCryptoPayPaymentInfo.fromJson(json, apiUrl: apiUrl);
+    final response = await _get(Uri.parse(apiUrl));
+    return OpenCryptoPayPaymentInfo.fromJson(_json(response), apiUrl: apiUrl);
   }
 
   /// Second request: fetch transaction details for [coin]. Values from
@@ -127,51 +95,19 @@ class OpenCryptoPayService {
     required DateTime quoteExpiration,
     OpenCryptoPayRecipient? recipient,
   }) async {
-    final url = buildTransactionDetailsUrl(
+    final response = await _get(buildTransactionDetailsUrl(
       apiUrl: apiUrl,
       coin: coin,
-      quoteId: quoteId
-    );
-
-    final Response response;
-    try {
-      response = await _client.get(url);
-    } catch (e) {
-      throw OpenCryptoPayApiException(
-        'Failed to reach OpenCryptoPay service: $e',
-      );
-    }
-
-    if (response.statusCode == 404) {
-      throw OpenCryptoPayNoPendingPaymentException(
-        _tryExtractMessage(response.body),
-      );
-    }
-
+      quoteId: quoteId,
+    ));
     if (response.statusCode == 400) {
       throw OpenCryptoPayUnsupportedMethodException(
         _tryExtractMessage(response.body),
       );
     }
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw OpenCryptoPayApiException(
-        'OpenCryptoPay service returned HTTP ${response.statusCode}.',
-        statusCode: response.statusCode,
-      );
-    }
-
-    final Map<String, dynamic> json;
-    try {
-      json = jsonDecode(response.body) as Map<String, dynamic>;
-    } catch (e) {
-      throw OpenCryptoPayApiException(
-        'Could not parse OpenCryptoPay response.',
-      );
-    }
-
     return OpenCryptoPayTransactionDetails.fromJson(
-      json,
+      _json(response),
       apiUrl: apiUrl,
       displayName: displayName,
       quoteId: quoteId,
@@ -220,25 +156,46 @@ class OpenCryptoPayService {
     } else {
       params['hex'] = txProof;
     }
-    final url = base.replace(queryParameters: params);
 
-    final Response response;
-    try {
-      response = await _client.get(url);
-    } catch (e) {
+    final response = await _get(base.replace(queryParameters: params));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
       throw OpenCryptoPayApiException(
-        'Failed to submit transaction proof: $e',
+        'Transaction proof submission failed (HTTP ${response.statusCode}).',
+        statusCode: response.statusCode,
       );
     }
+  }
 
-    if (response.statusCode >= 200 && response.statusCode < 300) {
-      return;
+  Future<Response> _get(Uri url) async {
+    try {
+      return await _client.get(url);
+    } catch (e) {
+      throw OpenCryptoPayApiException(
+        'Failed to reach OpenCryptoPay service: $e',
+      );
     }
+  }
 
-    throw OpenCryptoPayApiException(
-      'Transaction proof submission failed (HTTP ${response.statusCode}).',
-      statusCode: response.statusCode,
-    );
+  /// The JSON object of a successful [response].
+  static Map<String, dynamic> _json(Response response) {
+    if (response.statusCode == 404) {
+      throw OpenCryptoPayNoPendingPaymentException(
+        _tryExtractMessage(response.body),
+      );
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw OpenCryptoPayApiException(
+        'OpenCryptoPay service returned HTTP ${response.statusCode}.',
+        statusCode: response.statusCode,
+      );
+    }
+    try {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (e) {
+      throw OpenCryptoPayApiException(
+        'Could not parse OpenCryptoPay response.',
+      );
+    }
   }
 
   static String? _tryExtractMessage(String body) {
