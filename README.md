@@ -11,9 +11,8 @@ Provider agnostic Dart implementation of the [OpenCryptoPay](https://github.com/
 
 ## Install
 
-```yaml
-dependencies:
-  opencryptopay: ^0.1.0
+```sh
+dart pub add opencryptopay --git-url=https://github.com/cyrix126/opencryptopay
 ```
 
 ## Usage
@@ -22,17 +21,16 @@ dependencies:
 import 'package:http/http.dart';
 import 'package:opencryptopay/opencryptopay.dart';
 
-// 1. Implement CryptoCoin for your wallet's coin type.
-class MyCoin implements CryptoCoin {
-  const MyCoin(this.ticker, this.prettyName);
-  @override final String ticker;
-  @override final String prettyName;
-}
+// 1. Describe your wallet's coin.
+const coin = CryptoCoin(
+  ticker: 'BTC',
+  prettyName: 'Bitcoin',
+  chainType: CryptoChainType.bitcoinDerived,
+);
 
 // 2. Provide a package:http Client.
 //    Configure Tor / SOCKS routing at the client level (ex: with an
-//    IOClient wrapping a SOCKS-assigned HttpClient) — no per-request proxy
-//    plumbing is needed here.
+//    IOClient wrapping a SOCKS-assigned HttpClient).
 final client = Client();
 
 // 3. Build the service + controller.
@@ -43,30 +41,27 @@ final controller = OpenCryptoPayController(
 // 4. Run the controller
 final result = await controller.run(
   qrData: scannedQrData,
-  coin: MyCoin('BTC', 'Bitcoin'),
+  coin: coin,
   ownedCoins: [ /* the user's coins */ ],
 );
 
 switch (result) {
-  case OpenCryptoPaySuccess(:final details, :final address, :final amount, :final proofType, :final coin):
-    // prefill your send form with address/amount, then branch on proofType:
-    switch (proofType) {
-      case OpenCryptoPayProofType.signedTransactionHex:
-        // Sign the transaction but do NOT broadcast it.
-        // Submit the signed transaction HEX; the provider broadcasts it.
-        await controller.submitProof(
-          details: details, coin: coin, txProof: signedTxHex);
-      case OpenCryptoPayProofType.transactionHash:
-        // Sign AND broadcast the transaction yourself.
-        // Submit the resulting transaction hash for verification.
-        await controller.submitProof(
-          details: details, coin: coin, txProof: txHash);
+  case final OpenCryptoPaySuccess success:
+    // Prefill your send form with success.address and
+    // success.amountInSmallestUnit(decimals), then sign the transaction.
+    // When success.isBroadcastRequired, broadcast it and submit its hash.
+    // Otherwise submit the signed transaction HEX, which the provider
+    // broadcasts.
+    final proof = await success.session.submitProof(
+      success.isBroadcastRequired ? txHash : signedTxHex,
+    );
+    if (proof is OpenCryptoPayProofFailed) {
+      showError(OpenCryptoPayStrings.proofFailure(success.session));
     }
   case OpenCryptoPayUnsupported(:final alternatives):
-    // offer the user to pay with an alternative wallet.
-  case OpenCryptoPayNoPending():
-  case OpenCryptoPayLightning():
-  case OpenCryptoPayInvalidAddress():
-  case OpenCryptoPayError():
+    // Offer the user to pay with one of the alternatives.
+    showAlternatives(alternatives);
+  case final OpenCryptoPayFailure failure:
+    showError(OpenCryptoPayStrings.failure(failure));
 }
 ```
