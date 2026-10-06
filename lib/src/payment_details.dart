@@ -72,21 +72,25 @@ class OpenCryptoPayRecipient {
       };
 
   factory OpenCryptoPayRecipient.fromJson(Map<String, dynamic> json) {
-    final Map? postalAddress = json['address'];
+    final postalAddress = json['address'];
+    final address = postalAddress is Map ? postalAddress : const {};
     return OpenCryptoPayRecipient(
-      name: json['name'] as String?,
-      street: postalAddress?['street'] as String?,
-      houseNumber: postalAddress?['houseNumber'] as String?,
-      zip: postalAddress?['zip'] as String?,
-      city: postalAddress?['city'] as String?,
-      country: postalAddress?['country'] as String?,
-      phone: json['phone'] as String?,
-      mail: json['mail'] as String?,
-      website: json['website'] as String?,
-      registrationNumber: json['registrationNumber'] as String?,
+      name: _string(json['name']),
+      street: _string(address['street']),
+      houseNumber: _string(address['houseNumber']),
+      zip: _string(address['zip']),
+      city: _string(address['city']),
+      country: _string(address['country']),
+      phone: _string(json['phone']),
+      mail: _string(json['mail']),
+      website: _string(json['website']),
+      registrationNumber: _string(json['registrationNumber']),
     );
   }
 }
+
+/// [value] when it is a string, so a malformed optional field reads as absent.
+String? _string(Object? value) => value is String ? value : null;
 
 /// Payment information returned by the first request to the OpenCryptoPay API.
 class OpenCryptoPayPaymentInfo {
@@ -130,7 +134,7 @@ class OpenCryptoPayPaymentInfo {
 
     return OpenCryptoPayPaymentInfo(
       apiUrl: apiUrl,
-      displayName: json['displayName'] as String,
+      displayName: _string(json['displayName']) ?? '',
       quoteId: quoteId,
       callback: json['callback'] as String,
       quoteExpiration: quoteExpiration,

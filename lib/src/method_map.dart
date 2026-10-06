@@ -88,7 +88,8 @@ List<CryptoCoin> ownedCoinsSupportingMethods({
 /// Extract the available methods (with their accepted assets) from the
 /// payment-info JSON.
 ///
-/// Unavailable methods (those with `available: false`) are excluded.
+/// Unavailable methods (those with `available: false`) and methods whose
+/// `minFee` is not a finite, non-negative number are excluded.
 List<SupportedMethod> parseSupportedMethodsFromJson(Map<String, dynamic> json) {
   final transfers = json['transferAmounts'];
   if (transfers is! List) return const [];
@@ -97,7 +98,12 @@ List<SupportedMethod> parseSupportedMethodsFromJson(Map<String, dynamic> json) {
     if (entry is Map) {
       final available = entry['available'];
       final method = entry['method'];
-      if (method is String && (available == null || available == true)) {
+      final minFee = entry['minFee'] ?? 0;
+      if (method is String &&
+          (available == null || available == true) &&
+          minFee is num &&
+          minFee.isFinite &&
+          minFee >= 0) {
         final assets = <String>[];
         final assetList = entry['assets'];
         if (assetList is List) {
@@ -113,7 +119,7 @@ List<SupportedMethod> parseSupportedMethodsFromJson(Map<String, dynamic> json) {
         methods.add(SupportedMethod(
           method: method,
           assets: assets,
-          minFee: (entry['minFee'] as num?) ?? 0,
+          minFee: minFee,
         ));
       }
     }

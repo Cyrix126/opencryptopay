@@ -255,6 +255,18 @@ void main() {
       expect(methods.single.minFee, 0);
     });
 
+    test('a method with an unusable minFee is excluded', () {
+      final methods = parseSupportedMethodsFromJson({
+        'transferAmounts': [
+          {'method': 'Ethereum', 'minFee': '1'},
+          {'method': 'Polygon', 'minFee': double.infinity},
+          {'method': 'Arbitrum', 'minFee': -1},
+          {'method': 'Bitcoin', 'minFee': 2},
+        ],
+      });
+      expect(methods.single.method, 'Bitcoin');
+    });
+
     test('parses the recipient block', () {
       final info = OpenCryptoPayPaymentInfo.fromJson(
         paymentDetailsJson,
@@ -330,6 +342,28 @@ void main() {
       );
 
       expect(info.recipient, isNull);
+    });
+
+    test('malformed optional fields read as absent', () {
+      final info = OpenCryptoPayPaymentInfo.fromJson(
+        {
+          ...paymentDetailsJson,
+          'recipient': {
+            'name': 7,
+            'address': 'Bahnhofstrasse 7',
+            'phone': 41792684224,
+            'mail': 'mail@ammer.group',
+          },
+        }..remove('displayName'),
+        apiUrl: _decodedApiUrl,
+      );
+
+      expect(info.displayName, isEmpty);
+      final recipient = info.recipient!;
+      expect(recipient.name, isNull);
+      expect(recipient.street, isNull);
+      expect(recipient.phone, isNull);
+      expect(recipient.mail, 'mail@ammer.group');
     });
   });
 
