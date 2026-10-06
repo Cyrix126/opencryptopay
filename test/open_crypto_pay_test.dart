@@ -897,6 +897,40 @@ void main() {
       }
     });
 
+    test('the smallest unit amount covers the requested amount', () async {
+      for (final (uri, fractionDigits, smallest) in [
+        (
+          'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
+              '?amount=0.00001947',
+          8,
+          BigInt.from(1947),
+        ),
+        (
+          'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
+              '?amount=0.123456789',
+          8,
+          BigInt.from(12345679),
+        ),
+        (
+          'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
+              '?amount=0.000000004',
+          8,
+          BigInt.one,
+        ),
+      ]) {
+        final success = await _controller(_mockTwoRequestFlow(
+          txDetailsJson: {..._btcDetails, 'uri': uri},
+        )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+
+        expect(
+          (success as OpenCryptoPaySuccess)
+              .amountInSmallestUnit(fractionDigits),
+          smallest,
+          reason: uri,
+        );
+      }
+    });
+
     test('an undecodable payment URI query maps to an error', () async {
       final result = await _controller(_mockTwoRequestFlow(
         txDetailsJson: {

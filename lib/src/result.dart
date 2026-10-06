@@ -94,6 +94,7 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
     if (isRawAmount) return BigInt.tryParse(details.amount ?? '');
     final a = amount;
     if (a == null) return null;
-    return a.shift(fractionDigits).toBigInt();
+    // Round up so the payment covers the requested amount.
+    return a.shift(fractionDigits).ceil().toBigInt();
   }
 }
