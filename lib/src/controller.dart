@@ -90,7 +90,12 @@ class OpenCryptoPayController {
       );
     } on OpenCryptoPayNoPendingPaymentException {
       return const OpenCryptoPayNoPending();
-    } on OpenCryptoPayUnsupportedMethodException {
+    } on OpenCryptoPayUnsupportedMethodException catch (e, s) {
+      // The payment info already lists this asset as supported.
+      if (supported.assets.isNotEmpty) {
+        onError?.call(e, s);
+        return OpenCryptoPayError(isDecodeError: false, error: e);
+      }
       if (ownedCoins != null) {
         return OpenCryptoPayUnsupported(
           _alternativesFor(

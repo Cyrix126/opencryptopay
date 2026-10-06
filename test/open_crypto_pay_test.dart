@@ -998,6 +998,31 @@ void main() {
       expect(result, isA<OpenCryptoPayError>());
     });
 
+    test('a 400 for a listed asset maps to an error', () async {
+      final result = await _controller(_mockTwoRequestFlow(
+        txDetailsJson: {'message': 'Failed to create order'},
+        txDetailsStatus: 400,
+      )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+
+      expect(result, isA<OpenCryptoPayError>());
+    });
+
+    test('a 400 for a method without an asset list maps to unsupported',
+        () async {
+      final result = await _controller(_mockTwoRequestFlow(
+        paymentInfoJson: {
+          ...paymentDetailsJson,
+          'transferAmounts': [
+            {'method': 'Bitcoin', 'minFee': 0, 'available': true},
+          ],
+        },
+        txDetailsJson: {'message': 'unsupported'},
+        txDetailsStatus: 400,
+      )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+
+      expect(result, isA<OpenCryptoPayUnsupported>());
+    });
+
     test('unsupported coin maps to unsupported result with alternatives',
         () async {
       var calls = 0;
@@ -1057,20 +1082,21 @@ void main() {
       expect(calls, 1);
     });
 
-    test('a rejected token asset still suggests other assets on the same method',
+    test('an unlisted token asset still suggests other assets on the same method',
         () async {
-      final controller = _controller(
-        _mockHttpWithHandler((url) {
-          final hasMethod = url.queryParameters.containsKey('method');
-          if (hasMethod) {
-            return _res('{"message":"unsupported"}', 400);
-          }
-          return _res(jsonEncode(paymentDetailsJson), 200);
-        }),
-      );
+      final paymentInfo =
+          jsonDecode(jsonEncode(paymentDetailsJson)) as Map<String, dynamic>;
+      final ethereum = (paymentInfo['transferAmounts'] as List)
+          .firstWhere((entry) => entry['method'] == 'Ethereum') as Map;
+      (ethereum['assets'] as List).removeWhere((a) => a['asset'] == 'USDT');
+      final controller = _controller(_mockTwoRequestFlow(
+        paymentInfoJson: paymentInfo,
+        txDetailsJson: {'message': 'unsupported'},
+        txDetailsStatus: 400,
+      ));
 
       // User owns ETH (native) and USDT (token) on Ethereum, plus BTC.
-      // USDT is rejected, but ETH on the same method should still be offered.
+      // USDT is not listed, but ETH on the same method should still be offered.
       final result = await controller.run(
         qrData: _qrLink,
         coin: _usdt,
