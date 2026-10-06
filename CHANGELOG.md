@@ -27,6 +27,7 @@
 - A 400 on the details request maps to `OpenCryptoPayUnsupported` only for a method without an asset list
 - `submitProof` returns the in-flight submission to an overlapping call
 - The proof type comes from a hint that mentions hex, a hash or the tx parameter; `proofType` is null otherwise and `run()` returns the new `OpenCryptoPayUnknownProofType` before reading the payment URI
+- Drop the unused `build_runner` and `mockito` dev dependencies
 
 ## 0.3.0
 
