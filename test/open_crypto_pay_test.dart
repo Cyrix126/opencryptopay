@@ -1291,11 +1291,15 @@ void main() {
         expect(failing.isCompleted, isFalse);
         expect(failing.isActivePaymentFor(success.address), isTrue);
 
+        var requests = 0;
         final ok = OpenCryptoPaySession(
           details: success.details,
           coin: success.coin,
           service: OpenCryptoPayService(
-            client: _mockHttpReturning(_res('ok', 200)),
+            client: _mockHttpWithHandler((_) {
+              requests++;
+              return _res('ok', 200);
+            }),
           ),
         );
         expect(await ok.submitProof('txHashDummy'),
@@ -1306,6 +1310,7 @@ void main() {
         // Completed sessions are no-ops.
         expect(await ok.submitProof('txHashDummy'),
             isA<OpenCryptoPayProofAccepted>());
+        expect(requests, 1);
       });
     });
 
