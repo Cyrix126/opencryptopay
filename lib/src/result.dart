@@ -42,6 +42,11 @@ class OpenCryptoPayInvalidAmount extends OpenCryptoPayFailure {
   const OpenCryptoPayInvalidAmount();
 }
 
+/// The payment URI is on another chain than the wallet's coin.
+class OpenCryptoPayWrongChain extends OpenCryptoPayFailure {
+  const OpenCryptoPayWrongChain();
+}
+
 /// The provider's hint names no proof of payment the library can submit.
 class OpenCryptoPayUnknownProofType extends OpenCryptoPayFailure {
   const OpenCryptoPayUnknownProofType();

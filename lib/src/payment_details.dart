@@ -256,6 +256,13 @@ class OpenCryptoPayTransactionDetails {
   /// Whether this payment is an EVM ERC-20 token transfer.
   bool get isErc20Transfer => tokenContractAddress != null;
 
+  /// The EIP-155 chain ID an EIP-681 [uri] names (ex: 56 in
+  /// `ethereum:0xabc@56?value=1`).
+  int? get chainId {
+    final match = RegExp(r'^ethereum:[^@/?]*@(\d+)').firstMatch(uri ?? '');
+    return match == null ? null : int.tryParse(match[1]!);
+  }
+
   String? get amount => _amountParam?.value;
 
   /// Whether the amount is a raw integer in the coin's/token's base units (EVM

@@ -37,6 +37,10 @@ class OpenCryptoPayStrings {
   static const String invalidAmountMessage =
       'The payment response did not contain a valid amount.';
 
+  static const String wrongChainTitle = 'Invalid payment';
+  static const String wrongChainMessage =
+      'The payment request is for another network than this coin.';
+
   static const String unknownProofTypeTitle = 'Unsupported payment';
   static const String unknownProofTypeMessage =
       'This payment method is not supported. Pay with another coin.';
@@ -97,6 +101,10 @@ class OpenCryptoPayStrings {
         OpenCryptoPayInvalidAmount() => (
             title: invalidAmountTitle,
             message: invalidAmountMessage,
+          ),
+        OpenCryptoPayWrongChain() => (
+            title: wrongChainTitle,
+            message: wrongChainMessage,
           ),
         OpenCryptoPayUnknownProofType() => (
             title: unknownProofTypeTitle,

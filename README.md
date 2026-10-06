@@ -21,7 +21,8 @@ dart pub add opencryptopay --git-url=https://github.com/cyrix126/opencryptopay
 import 'package:http/http.dart';
 import 'package:opencryptopay/opencryptopay.dart';
 
-// 1. Describe your wallet's coin.
+// 1. Describe your wallet's coin. An EVM coin also sets its chainId
+//    (ex: chainId: 1 for Ethereum).
 const coin = CryptoCoin(
   ticker: 'BTC',
   prettyName: 'Bitcoin',
@@ -48,7 +49,13 @@ final result = await controller.run(
 switch (result) {
   case final OpenCryptoPaySuccess success:
     // Prefill your send form with success.address and
-    // success.amountInSmallestUnit(decimals), then sign the transaction.
+    // success.amountInSmallestUnit(decimals), use a fee of at least
+    // success.minFee (in success.minFeeUnit), then sign the transaction.
+    // Right before sending it, stop when the quote has expired.
+    if (success.session.isQuoteExpired) {
+      showError(OpenCryptoPayStrings.quoteExpiredAtSend(success.session));
+      break;
+    }
     // When success.isBroadcastRequired, broadcast it and submit its hash.
     // Otherwise submit the signed transaction HEX, which the provider
     // broadcasts.

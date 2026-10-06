@@ -147,6 +147,11 @@ class OpenCryptoPayController {
         : _parseAmount(amountString, isRaw: details.isRawAmount);
     if (amount == null) return const OpenCryptoPayInvalidAmount();
 
+    // A payment on another chain does not reach the seller.
+    if (details.chainId case final chainId? when chainId != coin.chainId) {
+      return const OpenCryptoPayWrongChain();
+    }
+
     return OpenCryptoPaySuccess(
       session: OpenCryptoPaySession(
         details: details,

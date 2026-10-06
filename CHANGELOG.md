@@ -33,6 +33,7 @@
 - A proof carries the `asset`, and EVM hex gets a `0x` prefix, as in the DFX and Cake wallets
 - `run()` returns `OpenCryptoPayInvalidAmount` for a payment URI without a positive amount, and `OpenCryptoPaySuccess.amount` and `amountInSmallestUnit` are no longer nullable
 - A `/transfer` URI takes its amount from `uint256`, else from its decimal `amount`
+- `CryptoCoin.chainId` names an EVM coin's chain, and `run()` returns the new `OpenCryptoPayWrongChain` for a payment URI on another chain
 
 ## 0.3.0
 

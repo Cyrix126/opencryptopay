@@ -16,6 +16,7 @@ class CryptoCoin {
     required this.ticker,
     required this.prettyName,
     this.chainType = CryptoChainType.other,
+    this.chainId,
   });
 
   /// Coin or token ticker symbol (ex: "BTC", "ETH", "USDT").
@@ -28,4 +29,8 @@ class CryptoCoin {
 
   /// Sets the unit of a provider's minimum fee.
   final CryptoChainType chainType;
+
+  /// EIP-155 chain ID of an EVM coin's network (ex: 1 for Ethereum). A
+  /// payment URI that names another chain is refused.
+  final int? chainId;
 }

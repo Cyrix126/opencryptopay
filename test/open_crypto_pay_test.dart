@@ -15,26 +15,28 @@ import 'sample_data/open_crypto_pay_payment_details_json.dart';
 /// Minimal [CryptoCoin] for tests.
 class _Coin implements CryptoCoin {
   const _Coin(this.ticker, this.prettyName,
-      [this.chainType = CryptoChainType.other]);
+      [this.chainType = CryptoChainType.other, this.chainId]);
   @override
   final String ticker;
   @override
   final String prettyName;
   @override
   final CryptoChainType chainType;
+  @override
+  final int? chainId;
 }
 
 const _btc = _Coin('BTC', 'Bitcoin', CryptoChainType.bitcoinDerived);
-const _eth = _Coin('ETH', 'Ethereum', CryptoChainType.evm);
+const _eth = _Coin('ETH', 'Ethereum', CryptoChainType.evm, 1);
 const _xmr = _Coin('XMR', 'Monero');
 const _firo = _Coin('FIRO', 'Firo', CryptoChainType.bitcoinDerived);
 const _ada = _Coin('ADA', 'Cardano');
 const _sol = _Coin('SOL', 'Solana');
 const _doge = _Coin('DOGE', 'Dogecoin', CryptoChainType.bitcoinDerived);
 const _ltc = _Coin('LTC', 'Litecoin', CryptoChainType.bitcoinDerived);
-const _usdt = _Coin('USDT', 'Ethereum', CryptoChainType.evm);
-const _zchf = _Coin('ZCHF', 'Polygon', CryptoChainType.evm);
-const _bnb = _Coin('BNB', 'Binance Smart Chain', CryptoChainType.evm);
+const _usdt = _Coin('USDT', 'Ethereum', CryptoChainType.evm, 1);
+const _zchf = _Coin('ZCHF', 'Polygon', CryptoChainType.evm, 137);
+const _bnb = _Coin('BNB', 'Binance Smart Chain', CryptoChainType.evm, 56);
 const _trx = _Coin('TRX', 'Tron');
 const _spark = _Coin('BTC', 'Spark');
 const _icp = _Coin('ICP', 'Internet Computer');
@@ -988,26 +990,30 @@ void main() {
     });
 
     test('the smallest unit amount covers the requested amount', () async {
-      for (final (uri, fractionDigits, smallest) in [
+      for (final (coin, uri, fractionDigits, smallest) in [
         (
+          _btc,
           'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
               '?amount=0.00001947',
           8,
           BigInt.from(1947),
         ),
         (
+          _btc,
           'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
               '?amount=0.123456789',
           8,
           BigInt.from(12345679),
         ),
         (
+          _btc,
           'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
               '?amount=0.000000004',
           8,
           BigInt.one,
         ),
         (
+          _eth,
           'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@1'
               '?value=2.014e18',
           18,
@@ -1016,7 +1022,7 @@ void main() {
       ]) {
         final success = await _controller(_mockTwoRequestFlow(
           txDetailsJson: {..._btcDetails, 'uri': uri},
-        )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+        )).run(qrData: _qrLink, coin: coin, ownedCoins: owned);
 
         expect(
           (success as OpenCryptoPaySuccess)
@@ -2127,11 +2133,19 @@ void main() {
 
       test('BinanceSmartChain uses an ethereum: URI with chain ID 56',
           () async {
-        final success = await _Provider(details: _productionBsc).run(_bnb)
-            as OpenCryptoPaySuccess;
+        final provider = _Provider(details: _productionBsc);
+        final success = await provider.run(_bnb) as OpenCryptoPaySuccess;
 
+        expect(success.details.chainId, 56);
         expect(success.address, '0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC');
         expect(success.amountInSmallestUnit(18), BigInt.from(1553320000000000));
+        // Only a coin on chain 56 pays it.
+        expect(await provider.run(_eth), isA<OpenCryptoPayWrongChain>());
+        expect(
+          await provider.run(
+              const _Coin('BNB', 'Binance Smart Chain', CryptoChainType.evm)),
+          isA<OpenCryptoPayWrongChain>(),
+        );
       });
 
       test(
@@ -2250,6 +2264,7 @@ void main() {
             expect(result.address, isNotEmpty);
             expect(result.proofType, isNotNull);
             expect(result.amountInSmallestUnit(8), greaterThan(BigInt.zero));
+            expect(result.details.chainId, anyOf(isNull, coin.chainId));
           }
         },
         // kiri_check does not await an async block while shrinking.
