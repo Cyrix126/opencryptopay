@@ -18,6 +18,7 @@
 - Upgrade http API, callback and proof URLs to https, except for onion hosts
 - An LNURL must carry the `lnurl` prefix and encode a web URL
 - Accept `blockchain_utils` up to 7.x
+- `run()` returns `OpenCryptoPayError` when the proof URL cannot be built from the callback
 
 ## 0.3.0
 

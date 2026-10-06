@@ -141,9 +141,10 @@ class OpenCryptoPayService {
     final base = Uri.parse(callback);
     final segments = List<String>.of(base.pathSegments);
     final index = segments.lastIndexOf('cb');
-    if (index == -1) {
+    if (base.host.isEmpty || index == -1) {
       throw OpenCryptoPayApiException(
-        'Callback URL has no /cb segment to derive the proof endpoint from.',
+        'Callback URL has no host or no /cb segment to derive the proof '
+        'endpoint from.',
       );
     }
     segments[index] = 'tx';

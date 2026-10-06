@@ -111,10 +111,12 @@ class OpenCryptoPayController {
       return const OpenCryptoPayLightning();
     }
 
-    // Fail before the payment when the payment URI cannot be read.
+    // Fail before the payment when the proof URL or the payment URI cannot be
+    // read.
     final String? address;
     final String? amountString;
     try {
+      OpenCryptoPayService.buildTransactionProofUrl(details.callback);
       address = details.address;
       amountString = details.amount;
     } catch (e, s) {

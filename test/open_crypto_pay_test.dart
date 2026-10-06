@@ -202,6 +202,15 @@ void main() {
       );
     });
 
+    test('throws when the callback has no host', () {
+      expect(
+        () => OpenCryptoPayService.buildTransactionProofUrl(
+          '/v1/lnurlp/cb/pl_beeddb41cd4b6d9e',
+        ),
+        throwsA(isA<OpenCryptoPayApiException>()),
+      );
+    });
+
     test('upgrades an http callback to https', () {
       final url = OpenCryptoPayService.buildTransactionProofUrl(
         'http://api.dfx.swiss/v1/lnurlp/cb/pl_beeddb41cd4b6d9e',
@@ -641,11 +650,12 @@ void main() {
     Client _mockTwoRequestFlow({
       required Map<String, dynamic> txDetailsJson,
       int txDetailsStatus = 200,
+      Map<String, dynamic> paymentInfoJson = paymentDetailsJson,
     }) {
       return _mockHttpWithHandler((url) {
         final hasMethod = url.queryParameters.containsKey('method');
         if (!hasMethod) {
-          return _res(jsonEncode(paymentDetailsJson), 200);
+          return _res(jsonEncode(paymentInfoJson), 200);
         }
         return _res(jsonEncode(txDetailsJson), txDetailsStatus);
       });
@@ -809,6 +819,16 @@ void main() {
           'uri': 'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
               '?amount=0.5&label=Caf%E9',
         },
+      )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+
+      expect(result, isA<OpenCryptoPayError>());
+    });
+
+    test('a callback the proof URL cannot be built from maps to an error',
+        () async {
+      final result = await _controller(_mockTwoRequestFlow(
+        paymentInfoJson: {...paymentDetailsJson, 'callback': _decodedApiUrl},
+        txDetailsJson: _btcDetails,
       )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
 
       expect(result, isA<OpenCryptoPayError>());
