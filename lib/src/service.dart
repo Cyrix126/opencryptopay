@@ -165,11 +165,18 @@ class OpenCryptoPayService {
     }
 
     final base = buildTransactionProofUrl(details.callback);
+    final method = openCryptoPayMethodFor(coin);
     final params = Map<String, String>.from(base.queryParameters);
     params['quote'] = quoteId ?? details.quoteId;
-    params['method'] = openCryptoPayMethodFor(coin).method;
+    // The DFX and Cake wallets send the asset with every proof, and EVM hex
+    // with a 0x prefix.
+    params['asset'] = method.asset;
+    params['method'] = method.method;
     if (details.isBroadcastRequired) {
       params['tx'] = txProof;
+    } else if (coin.chainType == CryptoChainType.evm &&
+        !txProof.startsWith('0x')) {
+      params['hex'] = '0x$txProof';
     } else {
       params['hex'] = txProof;
     }

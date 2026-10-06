@@ -1394,6 +1394,32 @@ void main() {
       });
     });
 
+    test('submitProof sends an EVM hex with one 0x prefix', () async {
+      for (final hex in ['f86c', '0xf86c']) {
+        Uri? proofUrl;
+        final session = OpenCryptoPaySession(
+          details: OpenCryptoPayTransactionDetails.fromJson(
+            {'hint': _dfxHexHint},
+            apiUrl: _decodedApiUrl,
+            displayName: 'Test Shop',
+            quoteId: 'plq_62b1865ed28358be',
+            callback: _callbackUrl,
+            quoteExpiration: DateTime.parse(_quoteExpiration),
+          ),
+          coin: _eth,
+          service: OpenCryptoPayService(
+            client: _mockHttpWithHandler((url) {
+              proofUrl = url;
+              return _res('', 200);
+            }),
+          ),
+        );
+
+        await withClock(fixedClock, () => session.submitProof(hex));
+        expect(proofUrl!.queryParameters['hex'], '0xf86c', reason: hex);
+      }
+    });
+
     test('submitProof sends the transaction hash to the /tx endpoint derived '
         'from the callback', () async {
       await withClock(fixedClock, () async {
@@ -1943,19 +1969,20 @@ void main() {
         );
       });
 
-      test('a proof carries the quote, the exact method name and the hex or tx',
-          () async {
+      test(
+          'a proof carries the quote, the exact method name, the asset and '
+          'the hex or tx', () async {
         await withClock(beforeQuoteExpiry, () async {
           for (final (coin, details, params) in [
             (
               _bnb,
               _productionBsc,
-              {'method': 'BinanceSmartChain', 'hex': 'proof'},
+              {'method': 'BinanceSmartChain', 'asset': 'BNB', 'hex': '0xproof'},
             ),
             (
               _ada,
               _readmeCardano,
-              {'method': 'Cardano', 'tx': 'proof'},
+              {'method': 'Cardano', 'asset': 'ADA', 'tx': 'proof'},
             ),
           ]) {
             final provider = _Provider(details: details);
@@ -2021,6 +2048,7 @@ void main() {
             isA<OpenCryptoPayProofAccepted>());
         expect(provider.requests.last.queryParameters, {
           'quote': 'plq_d170b11b44340eb1',
+          'asset': 'BTC',
           'method': 'Spark',
           'tx': transferId,
         });
