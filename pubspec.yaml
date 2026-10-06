@@ -8,7 +8,7 @@ environment:
   sdk: ^3.5.0
 
 dependencies:
-  blockchain_utils: ^3.3.0
+  blockchain_utils: '>=3.3.0 <8.0.0'
   decimal: ^3.2.4
   http: ^1.5.0
   clock: ^1.1.2
