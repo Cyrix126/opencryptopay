@@ -19,7 +19,8 @@ class OpenCryptoPayService {
   final Client _client;
 
   /// QR links look like `https://<provider-host>/pl/?lightning=LNURL1...`.
-  /// Detected by `/pl/` path + `lightning` query parameter, not by domain.
+  /// Detected on any host by the `/pl/` path and the `lightning` query
+  /// parameter.
   static bool isOpenCryptoPayUri(String? data) {
     if (data == null) return false;
     final uri = Uri.tryParse(data);
@@ -90,7 +91,6 @@ class OpenCryptoPayService {
   }
 
   /// First request: fetch payment info from the OpenCryptoPay API.
-  /// No method/asset query parameters are appended.
   Future<OpenCryptoPayPaymentInfo> fetchPaymentInfo({
     required String apiUrl,
   }) async {

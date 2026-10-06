@@ -253,16 +253,14 @@ class OpenCryptoPayTransactionDetails {
     return contract.isEmpty ? null : contract;
   }
 
-  /// Whether this payment is an EVM ERC-20 token transfer (as opposed to a
-  /// native coin transfer).
+  /// Whether this payment is an EVM ERC-20 token transfer.
   bool get isErc20Transfer => tokenContractAddress != null;
 
   String? get amount => _amountParam?.value;
 
   /// Whether the amount is a raw integer in the coin's/token's base units (EVM
-  /// `value`/`uint256`) rather than a human-readable decimal (BTC `amount`,
-  /// XMR `tx_amount`). Wallets must scale raw amounts by the coin's/token's
-  /// decimals
+  /// `value`/`uint256`). BTC `amount` and XMR `tx_amount` are decimals.
+  /// Wallets must scale raw amounts by the coin's/token's decimals
   bool get isRawAmount => _amountParam?.isRaw ?? false;
 
   /// The first amount in the [uri] query, and whether it is raw.
