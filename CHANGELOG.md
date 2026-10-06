@@ -25,6 +25,7 @@
 - Reject negative, hexadecimal, padded and exponent decimal amounts; accept EIP-681 scientific notation for raw amounts
 - Read malformed optional fields as absent, and exclude a method whose `minFee` is not a finite, non-negative number
 - A 400 on the details request maps to `OpenCryptoPayUnsupported` only for a method without an asset list
+- `submitProof` returns the in-flight submission to an overlapping call
 
 ## 0.3.0
 

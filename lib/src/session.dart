@@ -60,6 +60,7 @@ class OpenCryptoPaySession {
 
   bool _isCompleted = false;
   bool _mayHoldPayment = false;
+  Future<OpenCryptoPayProofResult>? _pendingProof;
 
   /// Whether the proof was already submitted successfully.
   bool get isCompleted => _isCompleted;
@@ -92,7 +93,12 @@ class OpenCryptoPaySession {
   /// ([OpenCryptoPayProofType.transactionHash]), or the signed raw transaction
   /// hex ([OpenCryptoPayProofType.signedTransactionHex]) which the provider
   /// broadcasts itself ([isBroadcastRequired] is false).
-  Future<OpenCryptoPayProofResult> submitProof(String txProof) async {
+  /// A call made while a submission is in flight returns that submission.
+  Future<OpenCryptoPayProofResult> submitProof(String txProof) =>
+      _pendingProof ??=
+          _submitProof(txProof).whenComplete(() => _pendingProof = null);
+
+  Future<OpenCryptoPayProofResult> _submitProof(String txProof) async {
     if (_isCompleted) return const OpenCryptoPayProofAccepted();
     try {
       await _service.submitTransactionProof(

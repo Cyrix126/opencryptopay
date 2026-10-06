@@ -1231,6 +1231,34 @@ void main() {
       });
     });
 
+    test('overlapping proof submissions send one request', () async {
+      await withClock(fixedClock, () async {
+        final success = await _controller(_mockTwoRequestFlow(
+          txDetailsJson: _btcDetails,
+        )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned)
+            as OpenCryptoPaySuccess;
+
+        var requests = 0;
+        final session = OpenCryptoPaySession(
+          details: success.details,
+          coin: success.coin,
+          service: OpenCryptoPayService(
+            client: _mockHttpWithHandler((_) {
+              requests++;
+              return _res('ok', 200);
+            }),
+          ),
+        );
+        final results = await Future.wait([
+          session.submitProof('signedTxHex'),
+          session.submitProof('signedTxHex'),
+        ]);
+
+        expect(results, everyElement(isA<OpenCryptoPayProofAccepted>()));
+        expect(requests, 1);
+      });
+    });
+
     test('a failed hash proof marks the broadcast payment as possibly held',
         () async {
       final details = OpenCryptoPayTransactionDetails.fromJson(
