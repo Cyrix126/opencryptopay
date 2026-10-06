@@ -60,7 +60,7 @@ const _btcDetails = {
 const _callbackUrl = 'https://api.dfx.swiss/v1/lnurlp/cb/pl_beeddb41cd4b6d9e';
 const _quoteExpiration = '2026-06-24T08:37:49.704Z';
 void main() {
-  final fixedTime = DateTime(2026, 6, 24, 8);
+  final fixedTime = DateTime.utc(2026, 6, 24, 8);
   final fixedClock = Clock.fixed(fixedTime);
 
   group('OpenCryptoPay URI handling', () {
