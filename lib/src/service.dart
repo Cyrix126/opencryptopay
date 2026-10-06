@@ -102,7 +102,7 @@ class OpenCryptoPayService {
     ));
     if (response.statusCode == 400) {
       throw OpenCryptoPayUnsupportedMethodException(
-        _tryExtractMessage(response.body),
+        _tryExtractMessage(response),
       );
     }
 
@@ -180,7 +180,7 @@ class OpenCryptoPayService {
   static Map<String, dynamic> _json(Response response) {
     if (response.statusCode == 404) {
       throw OpenCryptoPayNoPendingPaymentException(
-        _tryExtractMessage(response.body),
+        _tryExtractMessage(response),
       );
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -198,9 +198,9 @@ class OpenCryptoPayService {
     }
   }
 
-  static String? _tryExtractMessage(String body) {
+  static String? _tryExtractMessage(Response response) {
     try {
-      final json = jsonDecode(body) as Map<String, dynamic>;
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
       final message = json['message'];
       if (message is String && message.isNotEmpty) return message;
     } catch (_) {
