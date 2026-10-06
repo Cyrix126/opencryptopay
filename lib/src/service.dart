@@ -59,14 +59,14 @@ class OpenCryptoPayService {
     return utf8.decode(decoded.item2);
   }
 
-  /// Build the transaction-details request URL by appending the `method` and
-  /// `asset` query parameters (derived from [coin]) to the base API URL.
+  /// Build the transaction-details request URL by appending the `quote`,
+  /// `method` and `asset` query parameters to the [callback] URL.
   static Uri buildTransactionDetailsUrl({
-    required String apiUrl,
+    required String callback,
     required CryptoCoin coin,
-    required String quoteId
+    required String quoteId,
   }) {
-    final base = Uri.parse(apiUrl);
+    final base = Uri.parse(callback);
     final method = openCryptoPayMethodFor(coin);
     final params = Map<String, String>.from(base.queryParameters);
     params['quote'] = quoteId;
@@ -84,8 +84,9 @@ class OpenCryptoPayService {
     return OpenCryptoPayPaymentInfo.fromJson(_json(response), apiUrl: apiUrl);
   }
 
-  /// Second request: fetch transaction details for [coin]. Values from
-  /// [fetchPaymentInfo] are carried through into the returned details.
+  /// Second request: fetch transaction details for [coin] from the
+  /// [callback]. Values from [fetchPaymentInfo] are carried through into the
+  /// returned details.
   Future<OpenCryptoPayTransactionDetails> fetchTransactionDetails({
     required String apiUrl,
     required CryptoCoin coin,
@@ -96,7 +97,7 @@ class OpenCryptoPayService {
     OpenCryptoPayRecipient? recipient,
   }) async {
     final response = await _get(buildTransactionDetailsUrl(
-      apiUrl: apiUrl,
+      callback: callback,
       coin: coin,
       quoteId: quoteId,
     ));

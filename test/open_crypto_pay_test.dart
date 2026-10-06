@@ -125,13 +125,14 @@ void main() {
   });
 
   group('OpenCryptoPay transaction details URL building', () {
-    test('appends quote, method and asset query parameters', () {
+    test('appends quote, method and asset query parameters to the callback',
+        () {
       final url = OpenCryptoPayService.buildTransactionDetailsUrl(
-        apiUrl: _decodedApiUrl,
+        callback: _callbackUrl,
         coin: _xmr,
         quoteId: 'plq_62b1865ed28358be',
       );
-      expect(url.path, '/v1/lnurlp/pl_beeddb41cd4b6d9e');
+      expect(url.path, '/v1/lnurlp/cb/pl_beeddb41cd4b6d9e');
       expect(url.queryParameters['quote'], 'plq_62b1865ed28358be');
       expect(url.queryParameters['method'], 'Monero');
       expect(url.queryParameters['asset'], 'XMR');
@@ -140,7 +141,7 @@ void main() {
     test('strips spaces from the method derived from the coin pretty name',
         () {
       final url = OpenCryptoPayService.buildTransactionDetailsUrl(
-        apiUrl: _decodedApiUrl,
+        callback: _callbackUrl,
         coin: const _Coin('BNB', 'Binance Smart Chain'),
         quoteId: 'plq_62b1865ed28358be',
       );
@@ -664,8 +665,8 @@ void main() {
       expect(fetched[0].toString(), _decodedApiUrl);
 
       final detailsUrl = fetched[1];
-      expect(detailsUrl.host, Uri.parse(_decodedApiUrl).host);
-      expect(detailsUrl.path, Uri.parse(_decodedApiUrl).path);
+      expect(detailsUrl.host, Uri.parse(_callbackUrl).host);
+      expect(detailsUrl.path, Uri.parse(_callbackUrl).path);
       expect(
         detailsUrl.queryParameters['quote'],
         paymentDetailsJson['quote']['id'],
