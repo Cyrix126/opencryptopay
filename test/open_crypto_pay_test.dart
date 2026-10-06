@@ -504,6 +504,35 @@ void main() {
       expect(details.isErc20Transfer, isFalse);
       expect(details.address, 'bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6');
     });
+
+    test('takes the amount and its raw flag from the same query key', () {
+      for (final (uri, amount, isRaw) in [
+        (
+          'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@1'
+              '?amount=1&value=1000000000000000000',
+          '1',
+          false,
+        ),
+        (
+          'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@1/transfer'
+              '?address=0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC'
+              '&uint256=1246858&value=0',
+          '1246858',
+          true,
+        ),
+      ]) {
+        final details = OpenCryptoPayTransactionDetails.fromJson(
+          {'blockchain': 'Ethereum', 'uri': uri},
+          apiUrl: _decodedApiUrl,
+          displayName: 'Test Shop',
+          quoteId: 'plq_62b1865ed28358be',
+          callback: _callbackUrl,
+          quoteExpiration: DateTime.parse(_quoteExpiration),
+        );
+        expect(details.amount, amount, reason: uri);
+        expect(details.isRawAmount, isRaw, reason: uri);
+      }
+    });
   });
 
   group('Proof type detection from hint', () {

@@ -253,24 +253,29 @@ class OpenCryptoPayTransactionDetails {
   /// native coin transfer).
   bool get isErc20Transfer => tokenContractAddress != null;
 
-  String? get amount {
-    if (uri == null) return null;
-    final params = Uri.tryParse(uri ?? '')?.queryParameters;
-    return params?['amount'] ??
-        params?['tx_amount'] ??
-        params?['value'] ??
-        params?['uint256'];
-  }
+  String? get amount => _amountParam?.value;
 
   /// Whether the amount is a raw integer in the coin's/token's base units (EVM
   /// `value`/`uint256`) rather than a human-readable decimal (BTC `amount`,
   /// XMR `tx_amount`). Wallets must scale raw amounts by the coin's/token's
   /// decimals
-  bool get isRawAmount {
-    if (uri == null) return false;
+  bool get isRawAmount => _amountParam?.isRaw ?? false;
+
+  /// The first amount in the [uri] query, and whether it is raw.
+  ({String value, bool isRaw})? get _amountParam {
     final params = Uri.tryParse(uri ?? '')?.queryParameters;
-    return params != null &&
-        (params.containsKey('value') || params.containsKey('uint256'));
+    if (params == null) return null;
+    // In an ERC-20 transfer, `value` is the ether sent along with the call.
+    for (final (key, isRaw) in const [
+      ('amount', false),
+      ('tx_amount', false),
+      ('uint256', true),
+      ('value', true),
+    ]) {
+      final value = params[key];
+      if (value != null) return (value: value, isRaw: isRaw);
+    }
+    return null;
   }
 
   OpenCryptoPayProofType get proofType {

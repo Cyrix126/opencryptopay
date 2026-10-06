@@ -20,6 +20,7 @@
 - Accept `blockchain_utils` up to 7.x
 - `run()` returns `OpenCryptoPayError` when the proof URL cannot be built from the callback
 - A transfer URI needs a recipient in `address` or `to`, and `/transfer` counts only before the query
+- `amount` and `isRawAmount` come from the same query key, with `uint256` before `value`
 
 ## 0.3.0
 
