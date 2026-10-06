@@ -59,10 +59,10 @@ class OpenCryptoPayStrings {
       '${isPaymentUnsent ? ' The payment was NOT sent.' : ''}'
       ' Ask the seller to create a new payment and scan the QR code again.';
 
-  static const String proofFailedTitle = 'Seller not notified';
+  static const String proofFailedTitle = 'Seller confirmation missing';
   static const String proofFailed =
-      'Payment sent, but the seller could not be notified. '
-      'Show the transaction to the seller.';
+      'Payment sent, but the confirmation from the seller did not arrive. '
+      'Show the transaction to the seller and do not pay again.';
 
   static const String deliveryFailedTitle = 'Payment not delivered';
   static const String deliveryFailed =

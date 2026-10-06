@@ -43,7 +43,8 @@ class OpenCryptoPaySession {
     required this.coin,
     required OpenCryptoPayService service,
     this.minFee = 0,
-  }) : _service = service;
+  })  : _service = service,
+        _quoteId = details.quoteId;
 
   final OpenCryptoPayTransactionDetails details;
   final CryptoCoin coin;
@@ -60,6 +61,7 @@ class OpenCryptoPaySession {
 
   bool _isCompleted = false;
   bool _mayHoldPayment = false;
+  String? _quoteId;
   Future<OpenCryptoPayProofResult>? _pendingProof;
 
   /// Whether the proof was already submitted successfully.
@@ -101,16 +103,21 @@ class OpenCryptoPaySession {
   Future<OpenCryptoPayProofResult> _submitProof(String txProof) async {
     if (_isCompleted) return const OpenCryptoPayProofAccepted();
     try {
+      final quoteId = _quoteId ??=
+          (await _service.fetchPaymentInfo(apiUrl: details.apiUrl)).quoteId;
       await _service.submitTransactionProof(
         details: details,
         coin: coin,
         txProof: txProof,
+        quoteId: quoteId,
       );
       _isCompleted = true;
       return const OpenCryptoPayProofAccepted();
     } on OpenCryptoPayQuoteExpiredException catch (e) {
       return OpenCryptoPayProofQuoteExpired(e);
     } catch (e) {
+      // A Spark quote that rejected a transfer cannot be used again.
+      if (openCryptoPayMethodFor(coin).method == 'Spark') _quoteId = null;
       final failed = OpenCryptoPayProofFailed(e);
       // A hash proof follows the wallet's own broadcast.
       if (isBroadcastRequired || !failed.isRejectedByProvider) {

@@ -1370,6 +1370,10 @@ void main() {
           isA<OpenCryptoPayProofFailed>());
       expect(session.mayHoldPayment, isTrue);
       expect(
+        OpenCryptoPayStrings.proofFailure(session).message,
+        contains('do not pay again'),
+      );
+      expect(
         OpenCryptoPayStrings.quoteExpiredAtSend(session).title,
         OpenCryptoPayStrings.deliveryUnconfirmedTitle,
       );
@@ -1443,6 +1447,54 @@ void main() {
         expect(proofUrl!.queryParameters['tx'], 'txHashDummy');
         expect(proofUrl!.queryParameters.containsKey('hex'), isFalse);
       });
+    });
+
+    test('a Spark retry reports the transfer under a new quote', () async {
+      final details = OpenCryptoPayTransactionDetails.fromJson(
+        {
+          'blockchain': 'Spark',
+          'hint':
+              'Pay the URI on Spark and send the transfer ID back as the tx parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e',
+        },
+        apiUrl: _decodedApiUrl,
+        displayName: 'Test Shop',
+        quoteId: 'plq_62b1865ed28358be',
+        callback: _callbackUrl,
+        quoteExpiration: DateTime.parse(_quoteExpiration),
+      );
+      final requests = <Uri>[];
+      final session = OpenCryptoPaySession(
+        details: details,
+        coin: const _Coin('BTC', 'Spark'),
+        service: OpenCryptoPayService(
+          client: _mockHttpWithHandler((url) {
+            requests.add(url);
+            if (url.toString() == _decodedApiUrl) {
+              return _res(
+                jsonEncode({
+                  ...paymentDetailsJson,
+                  'quote': {'id': 'plq_new', 'expiration': _quoteExpiration},
+                }),
+                200,
+              );
+            }
+            // The first quote rejected the transfer.
+            final isNewQuote = url.queryParameters['quote'] == 'plq_new';
+            return _res('{}', isNewQuote ? 200 : 400);
+          }),
+        ),
+      );
+
+      expect(await session.submitProof('transferId'),
+          isA<OpenCryptoPayProofFailed>());
+      expect(await session.submitProof('transferId'),
+          isA<OpenCryptoPayProofAccepted>());
+      expect(requests.map((url) => url.path), [
+        '/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
+        '/v1/lnurlp/pl_beeddb41cd4b6d9e',
+        '/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
+      ]);
+      expect(requests.last.queryParameters['tx'], 'transferId');
     });
 
     test('proof failure message depends on whether the wallet broadcast',

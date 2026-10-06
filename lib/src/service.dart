@@ -151,6 +151,7 @@ class OpenCryptoPayService {
     return _upgradeToHttps(base.replace(pathSegments: segments));
   }
 
+  /// Submit [txProof] under [quoteId], or the quote of [details] when null.
   Future<void> submitTransactionProof({
     required OpenCryptoPayTransactionDetails details,
     required CryptoCoin coin,
@@ -165,8 +166,7 @@ class OpenCryptoPayService {
 
     final base = buildTransactionProofUrl(details.callback);
     final params = Map<String, String>.from(base.queryParameters);
-    final effectiveQuote = quoteId ?? details.quoteId;
-    params['quote'] = effectiveQuote;
+    params['quote'] = quoteId ?? details.quoteId;
     params['method'] = openCryptoPayMethodFor(coin).method;
     if (details.isBroadcastRequired) {
       params['tx'] = txProof;
