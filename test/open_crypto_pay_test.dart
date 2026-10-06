@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:blockchain_utils/bech32/bech32_base.dart';
 import 'package:clock/clock.dart';
 import 'package:http/http.dart';
 import 'package:http/testing.dart';
@@ -122,6 +123,14 @@ void main() {
     test('decodes an LNURL (LUD-01) to its API URL', () {
       expect(OpenCryptoPayService.decodeLnurl(_lnurl), _decodedApiUrl);
     });
+
+    test('upgrades an http API URL to https', () {
+      final lnurl = Bech32Encoder.encode(
+        'lnurl',
+        utf8.encode('http://api.dfx.swiss/v1/lnurlp/pl_beeddb41cd4b6d9e'),
+      );
+      expect(OpenCryptoPayService.decodeLnurl(lnurl), _decodedApiUrl);
+    });
   });
 
   group('OpenCryptoPay transaction details URL building', () {
@@ -148,6 +157,24 @@ void main() {
       expect(url.queryParameters['method'], 'BinanceSmartChain');
       expect(url.queryParameters['asset'], 'BNB');
     });
+
+    test('upgrades an http callback to https', () {
+      final url = OpenCryptoPayService.buildTransactionDetailsUrl(
+        callback: 'http://api.dfx.swiss/v1/lnurlp/cb/pl_beeddb41cd4b6d9e',
+        coin: _xmr,
+        quoteId: 'plq_62b1865ed28358be',
+      );
+      expect(url.scheme, 'https');
+    });
+
+    test('keeps http for an onion callback', () {
+      final url = OpenCryptoPayService.buildTransactionDetailsUrl(
+        callback: 'http://pay.example.onion/v1/lnurlp/cb/pl_beeddb41cd4b6d9e',
+        coin: _xmr,
+        quoteId: 'plq_62b1865ed28358be',
+      );
+      expect(url.scheme, 'http');
+    });
   });
 
   group('OpenCryptoPay transaction proof URL building', () {
@@ -172,6 +199,16 @@ void main() {
       expect(
         () => OpenCryptoPayService.buildTransactionProofUrl(_decodedApiUrl),
         throwsA(isA<OpenCryptoPayApiException>()),
+      );
+    });
+
+    test('upgrades an http callback to https', () {
+      final url = OpenCryptoPayService.buildTransactionProofUrl(
+        'http://api.dfx.swiss/v1/lnurlp/cb/pl_beeddb41cd4b6d9e',
+      );
+      expect(
+        url.toString(),
+        'https://api.dfx.swiss/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
       );
     });
   });

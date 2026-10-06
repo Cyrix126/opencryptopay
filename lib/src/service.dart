@@ -53,11 +53,17 @@ class OpenCryptoPayService {
     return lnurl;
   }
 
-  /// Decode an LNURL (LUD-01) into its underlying https API URL.
+  /// Decode an LNURL (LUD-01) into its https (or onion http) API URL.
   static String decodeLnurl(String lnurl) {
     final decoded = Bech32Decoder.decodeWithoutHRP(lnurl);
-    return utf8.decode(decoded.item2);
+    return _upgradeToHttps(Uri.parse(utf8.decode(decoded.item2))).toString();
   }
+
+  // LUD-01 allows plain http for onion services.
+  static Uri _upgradeToHttps(Uri url) =>
+      url.isScheme('http') && !url.host.endsWith('.onion')
+          ? url.replace(scheme: 'https')
+          : url;
 
   /// Build the transaction-details request URL by appending the `quote`,
   /// `method` and `asset` query parameters to the [callback] URL.
@@ -66,7 +72,7 @@ class OpenCryptoPayService {
     required CryptoCoin coin,
     required String quoteId,
   }) {
-    final base = Uri.parse(callback);
+    final base = _upgradeToHttps(Uri.parse(callback));
     final method = openCryptoPayMethodFor(coin);
     final params = Map<String, String>.from(base.queryParameters);
     params['quote'] = quoteId;
@@ -118,10 +124,11 @@ class OpenCryptoPayService {
     );
   }
 
-  /// Build the transaction-proof URL from the [callback] URL by replacing
-  /// its `cb` path segment with `tx`, as specified by the standard ("The API
-  /// URL to send the transaction proof back to the payment provider can be
-  /// constructed by using the callback URL and replacing `/cb` with `/tx`").
+  /// Build the https transaction-proof URL from the [callback] URL by
+  /// replacing its `cb` path segment with `tx`, as specified by the standard
+  /// ("The API URL to send the transaction proof back to the payment provider
+  /// can be constructed by using the callback URL and replacing `/cb` with
+  /// `/tx`").
   static Uri buildTransactionProofUrl(String callback) {
     final base = Uri.parse(callback);
     final segments = List<String>.of(base.pathSegments);
@@ -132,7 +139,7 @@ class OpenCryptoPayService {
       );
     }
     segments[index] = 'tx';
-    return base.replace(pathSegments: segments);
+    return _upgradeToHttps(base.replace(pathSegments: segments));
   }
 
   Future<void> submitTransactionProof({

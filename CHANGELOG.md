@@ -15,6 +15,7 @@
 - Rename `requiresBroadcast` to `isBroadcastRequired`, and the `paymentNotSent` parameter of `OpenCryptoPayStrings.quoteExpiredMessage` to `isPaymentUnsent`
 - `submitTransactionProof` no longer returns `bool`
 - Fetch the transaction details from the callback URL, as the spec requires; `buildTransactionDetailsUrl` takes the `callback`
+- Upgrade http API, callback and proof URLs to https, except for onion hosts
 
 ## 0.3.0
 
