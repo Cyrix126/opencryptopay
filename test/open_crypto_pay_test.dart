@@ -642,6 +642,52 @@ void main() {
           OpenCryptoPayProofType.signedTransactionHex);
       expect(details.isBroadcastRequired, isFalse);
     });
+
+    // Hints returned by the DFX demo payment link for each method, with the
+    // proof type the library must detect. Lightning returns no hint and
+    // BinancePay returned an error.
+    const dfxHexHint =
+        'Use this data to create a transaction and sign it. Send the signed transaction back as HEX via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e. We check the transferred HEX and broadcast the transaction to the blockchain.';
+    const dfxFiroHint =
+        'Use this data to create a transaction and sign it. Either send the signed transaction back as HEX via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e, or broadcast the transaction yourself and send the transaction hash (txId) back via the same endpoint.';
+    const dfxHashHint =
+        'Use this data to create a transaction and sign it. Broadcast the signed transaction to the blockchain and send the transaction hash back via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e';
+    const dfxSparkHint =
+        'Pay the URI on Spark and send the transfer ID back as the tx parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e';
+    const dfxInternetComputerHint =
+        'Approve the address from the URI for the required amount plus transfer fee using icrc2_approve. Then send your Principal ID as the sender parameter via the endpoint https://api.dfx.swiss/v1/lnurlp/tx/plp_f1ba466e2f1c0a4e.';
+    const hex = OpenCryptoPayProofType.signedTransactionHex;
+    const hash = OpenCryptoPayProofType.transactionHash;
+    const dfxHints = {
+      'Ethereum': (dfxHexHint, hex),
+      'Polygon': (dfxHexHint, hex),
+      'Arbitrum': (dfxHexHint, hex),
+      'Optimism': (dfxHexHint, hex),
+      'Base': (dfxHexHint, hex),
+      'BinanceSmartChain': (dfxHexHint, hex),
+      'Bitcoin': (dfxHexHint, hex),
+      'Firo': (dfxFiroHint, hex),
+      'Monero': (dfxHashHint, hash),
+      'Solana': (dfxHashHint, hash),
+      'Tron': (dfxHashHint, hash),
+      'Cardano': (dfxHashHint, hash),
+      'Spark': (dfxSparkHint, hash),
+      'InternetComputer': (dfxInternetComputerHint, null),
+    };
+    for (final MapEntry(key: method, value: (hint, proofType))
+        in dfxHints.entries) {
+      test('DFX $method hint -> ${proofType?.name ?? 'no proof type'}', () {
+        final details = OpenCryptoPayTransactionDetails.fromJson(
+          {'blockchain': method, 'hint': hint},
+          apiUrl: _decodedApiUrl,
+          displayName: 'Test Shop',
+          quoteId: 'plq_62b1865ed28358be',
+          callback: _callbackUrl,
+          quoteExpiration: DateTime.parse(_quoteExpiration),
+        );
+        expect(details.proofType, proofType);
+      });
+    }
   });
 
   group('OpenCryptoPay method mapping', () {
@@ -895,7 +941,7 @@ void main() {
 
     test('missing address maps to an invalid address result', () async {
       final controller = _controller(_mockTwoRequestFlow(
-        txDetailsJson: {'blockchain': 'Bitcoin', 'hint': 'x'},
+        txDetailsJson: {'blockchain': 'Bitcoin', 'hint': _btcDetails['hint']},
       ));
 
       final result = await controller.run(
@@ -919,7 +965,11 @@ void main() {
             '?address=0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC&uint256=1.5',
       ]) {
         final controller = _controller(_mockTwoRequestFlow(
-          txDetailsJson: {'blockchain': 'Bitcoin', 'uri': uri, 'hint': 'x'},
+          txDetailsJson: {
+            'blockchain': 'Bitcoin',
+            'uri': uri,
+            'hint': _btcDetails['hint'],
+          },
         ));
 
         final result = await controller.run(
@@ -986,6 +1036,34 @@ void main() {
       )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
 
       expect(result, isA<OpenCryptoPayError>());
+    });
+
+    test('a hint naming no proof type maps to an unknown proof type', () async {
+      final result = await _controller(_mockTwoRequestFlow(
+        txDetailsJson: {..._btcDetails, 'hint': 'Pay this request.'},
+      )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+
+      expect(result, isA<OpenCryptoPayUnknownProofType>());
+      expect(
+        OpenCryptoPayStrings.failure(result as OpenCryptoPayFailure).message,
+        OpenCryptoPayStrings.unknownProofTypeMessage,
+      );
+    });
+
+    test('an unknown proof type is reported before the payment URI is read',
+        () async {
+      // BinancePay details from the spec: a deep link without an amount.
+      const link = 'bnc://app.binance.com/payment/secpay'
+          '?tempToken=IzjFLlGOoHAdeUth9FurNGjONDeI5Hq9';
+      final result = await _controller(_mockTwoRequestFlow(
+        txDetailsJson: {
+          'expiryDate': '2025-05-01T14:34:40.881Z',
+          'uri': link,
+          'hint': 'Pay in the Binance app by following the deep link $link.',
+        },
+      )).run(qrData: _qrLink, coin: _btc, ownedCoins: owned);
+
+      expect(result, isA<OpenCryptoPayUnknownProofType>());
     });
 
     test('a callback the proof URL cannot be built from maps to an error',

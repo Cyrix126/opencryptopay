@@ -282,13 +282,17 @@ class OpenCryptoPayTransactionDetails {
     return null;
   }
 
-  OpenCryptoPayProofType get proofType {
-    final h = hint;
-    if (h == null) return OpenCryptoPayProofType.transactionHash;
-    if (RegExp(r'\bas HEX\b', caseSensitive: false).hasMatch(h)) {
+  /// The signed transaction hex when the [hint] mentions hex, the transaction
+  /// hash when it mentions a hash or the tx parameter, and null otherwise.
+  OpenCryptoPayProofType? get proofType {
+    final h = hint ?? '';
+    if (RegExp(r'\bhex', caseSensitive: false).hasMatch(h)) {
       return OpenCryptoPayProofType.signedTransactionHex;
     }
-    return OpenCryptoPayProofType.transactionHash;
+    if (RegExp(r'\b(hash|tx parameter)\b', caseSensitive: false).hasMatch(h)) {
+      return OpenCryptoPayProofType.transactionHash;
+    }
+    return null;
   }
 
   /// Whether the wallet must broadcast the signed transaction itself before

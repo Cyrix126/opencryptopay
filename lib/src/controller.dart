@@ -116,6 +116,12 @@ class OpenCryptoPayController {
       return const OpenCryptoPayLightning();
     }
 
+    // An unsupported method may use a payment URI form the library cannot
+    // read.
+    if (details.proofType == null) {
+      return const OpenCryptoPayUnknownProofType();
+    }
+
     // Fail before the payment when the proof URL or the payment URI cannot be
     // read.
     final String? address;

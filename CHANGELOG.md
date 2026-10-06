@@ -26,6 +26,7 @@
 - Read malformed optional fields as absent, and exclude a method whose `minFee` is not a finite, non-negative number
 - A 400 on the details request maps to `OpenCryptoPayUnsupported` only for a method without an asset list
 - `submitProof` returns the in-flight submission to an overlapping call
+- The proof type comes from a hint that mentions hex, a hash or the tx parameter; `proofType` is null otherwise and `run()` returns the new `OpenCryptoPayUnknownProofType` before reading the payment URI
 
 ## 0.3.0
 

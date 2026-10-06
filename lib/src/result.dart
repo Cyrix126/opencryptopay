@@ -42,6 +42,11 @@ class OpenCryptoPayInvalidAmount extends OpenCryptoPayFailure {
   const OpenCryptoPayInvalidAmount();
 }
 
+/// The provider's hint names no proof of payment the library can submit.
+class OpenCryptoPayUnknownProofType extends OpenCryptoPayFailure {
+  const OpenCryptoPayUnknownProofType();
+}
+
 /// The link could not be decoded, or another error occurred.
 class OpenCryptoPayError extends OpenCryptoPayFailure {
   const OpenCryptoPayError({required this.isDecodeError, this.error});
@@ -84,7 +89,7 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
 
   bool get isRawAmount => details.isRawAmount;
 
-  OpenCryptoPayProofType get proofType => details.proofType;
+  OpenCryptoPayProofType? get proofType => details.proofType;
 
   bool get isBroadcastRequired => details.isBroadcastRequired;
 

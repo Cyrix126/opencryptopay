@@ -37,6 +37,10 @@ class OpenCryptoPayStrings {
   static const String invalidAmountMessage =
       'The payment response did not contain a valid amount.';
 
+  static const String unknownProofTypeTitle = 'Unsupported payment';
+  static const String unknownProofTypeMessage =
+      'This payment method is not supported. Pay with another coin.';
+
   static const String decodeFailedTitle = 'Decoding unsuccessful';
   static const String decodeFailedMessage =
       'This OpenCryptoPay code could not be decoded.';
@@ -93,6 +97,10 @@ class OpenCryptoPayStrings {
         OpenCryptoPayInvalidAmount() => (
             title: invalidAmountTitle,
             message: invalidAmountMessage,
+          ),
+        OpenCryptoPayUnknownProofType() => (
+            title: unknownProofTypeTitle,
+            message: unknownProofTypeMessage,
           ),
         OpenCryptoPayError(isDecodeError: true) => (
             title: decodeFailedTitle,

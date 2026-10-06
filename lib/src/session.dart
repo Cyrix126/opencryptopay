@@ -69,7 +69,7 @@ class OpenCryptoPaySession {
   /// reached the network or the provider, so the payment may still go through.
   bool get mayHoldPayment => _mayHoldPayment;
 
-  OpenCryptoPayProofType get proofType => details.proofType;
+  OpenCryptoPayProofType? get proofType => details.proofType;
 
   /// Whether the wallet must broadcast the transaction itself before
   /// submitting the proof.
