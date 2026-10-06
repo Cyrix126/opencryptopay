@@ -215,18 +215,18 @@ class OpenCryptoPayTransactionDetails {
     final colon = value.indexOf(':');
     if (colon == -1) return null;
     final afterScheme = value.substring(colon + 1);
-
-    // ERC-20 / EVM token transfer form:
-    //   ethereum:<tokenContract>@<chainId>/transfer?address=<recipient>&uint256=<raw>
-    final transferMarker = afterScheme.indexOf('/transfer');
-    if (transferMarker != -1) {
-      final params = Uri.tryParse(value)?.queryParameters;
-      final recipient = params?['address'];
-      if (recipient != null && recipient.isNotEmpty) return recipient;
-    }
-
     final q = afterScheme.indexOf('?');
     final addr = q == -1 ? afterScheme : afterScheme.substring(0, q);
+
+    // Token transfer forms:
+    //   ethereum:<tokenContract>@<chainId>/transfer?address=<recipient>&uint256=<raw>
+    //   icp:<ledger>/transfer?to=<recipient>&amount=<decimal>
+    if (addr.endsWith('/transfer')) {
+      final params = Uri.tryParse(value)?.queryParameters;
+      final recipient = params?['address'] ?? params?['to'];
+      return recipient == null || recipient.isEmpty ? null : recipient;
+    }
+
     // Strip a possible chain-id suffix for EVM (ex: 0xabc@1).
     final at = addr.indexOf('@');
     return at == -1 ? addr : addr.substring(0, at);
@@ -239,9 +239,10 @@ class OpenCryptoPayTransactionDetails {
     final colon = value.indexOf(':');
     if (colon == -1) return null;
     final afterScheme = value.substring(colon + 1);
-    final transferMarker = afterScheme.indexOf('/transfer');
-    if (transferMarker == -1) return null;
-    final contractPart = afterScheme.substring(0, transferMarker);
+    final q = afterScheme.indexOf('?');
+    final path = q == -1 ? afterScheme : afterScheme.substring(0, q);
+    if (!path.endsWith('/transfer')) return null;
+    final contractPart = path.substring(0, path.length - '/transfer'.length);
     // Strip a possible chain-id suffix for EVM (ex: 0xabc@1).
     final at = contractPart.indexOf('@');
     final contract = at == -1 ? contractPart : contractPart.substring(0, at);

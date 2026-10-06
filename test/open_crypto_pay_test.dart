@@ -448,6 +448,62 @@ void main() {
       expect(details.isRawAmount, isTrue);
       expect(details.callback, _callbackUrl);
     });
+
+    test('a token transfer URI without a recipient has no address', () {
+      for (final uri in [
+        'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@1/transfer'
+            '?uint256=1246858',
+        'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@1/transfer'
+            '?address=&uint256=1246858',
+      ]) {
+        final details = OpenCryptoPayTransactionDetails.fromJson(
+          {'blockchain': 'Ethereum', 'uri': uri},
+          apiUrl: _decodedApiUrl,
+          displayName: 'Test Shop',
+          quoteId: 'plq_62b1865ed28358be',
+          callback: _callbackUrl,
+          quoteExpiration: DateTime.parse(_quoteExpiration),
+        );
+        expect(details.address, isNull, reason: uri);
+      }
+    });
+
+    test('a transfer URI may name its recipient with to', () {
+      final details = OpenCryptoPayTransactionDetails.fromJson(
+        {
+          'blockchain': 'InternetComputer',
+          'uri': 'icp:ryjl3-tyaaa-aaaaa-aaaba-cai/transfer'
+              '?to=ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae'
+              '&amount=0.34772601',
+        },
+        apiUrl: _decodedApiUrl,
+        displayName: 'Test Shop',
+        quoteId: 'plq_62b1865ed28358be',
+        callback: _callbackUrl,
+        quoteExpiration: DateTime.parse(_quoteExpiration),
+      );
+      expect(
+        details.address,
+        'ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae',
+      );
+    });
+
+    test('a /transfer in the query does not make a token transfer', () {
+      final details = OpenCryptoPayTransactionDetails.fromJson(
+        {
+          'blockchain': 'Bitcoin',
+          'uri': 'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'
+              '?amount=0.001&label=Shop/transfer&address=bc1qother',
+        },
+        apiUrl: _decodedApiUrl,
+        displayName: 'Test Shop',
+        quoteId: 'plq_62b1865ed28358be',
+        callback: _callbackUrl,
+        quoteExpiration: DateTime.parse(_quoteExpiration),
+      );
+      expect(details.isErc20Transfer, isFalse);
+      expect(details.address, 'bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6');
+    });
   });
 
   group('Proof type detection from hint', () {

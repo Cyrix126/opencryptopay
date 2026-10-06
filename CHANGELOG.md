@@ -19,6 +19,7 @@
 - An LNURL must carry the `lnurl` prefix and encode a web URL
 - Accept `blockchain_utils` up to 7.x
 - `run()` returns `OpenCryptoPayError` when the proof URL cannot be built from the callback
+- A transfer URI needs a recipient in `address` or `to`, and `/transfer` counts only before the query
 
 ## 0.3.0
 
