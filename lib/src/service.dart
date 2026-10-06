@@ -5,6 +5,7 @@ import 'package:http/http.dart';
 
 import 'coin.dart';
 import 'exceptions.dart';
+import 'method_map.dart';
 import 'payment_details.dart';
 
 /// OpenCryptoPay flow service.
@@ -66,10 +67,11 @@ class OpenCryptoPayService {
     required String quoteId
   }) {
     final base = Uri.parse(apiUrl);
+    final method = openCryptoPayMethodFor(coin);
     final params = Map<String, String>.from(base.queryParameters);
     params['quote'] = quoteId;
-    params['method'] = coin.prettyName.replaceAll(' ', '');
-    params['asset'] = coin.ticker;
+    params['method'] = method.method;
+    params['asset'] = method.asset;
     return base.replace(queryParameters: params);
   }
 
@@ -212,7 +214,7 @@ class OpenCryptoPayService {
     final params = Map<String, String>.from(base.queryParameters);
     final effectiveQuote = quoteId ?? details.quoteId;
     params['quote'] = effectiveQuote;
-    params['method'] = coin.prettyName.replaceAll(' ', '');
+    params['method'] = openCryptoPayMethodFor(coin).method;
     if (details.isBroadcastRequired) {
       params['tx'] = txProof;
     } else {
