@@ -55,8 +55,16 @@ class OpenCryptoPayService {
 
   /// Decode an LNURL (LUD-01) into its https (or onion http) API URL.
   static String decodeLnurl(String lnurl) {
-    final decoded = Bech32Decoder.decodeWithoutHRP(lnurl);
-    return _upgradeToHttps(Uri.parse(utf8.decode(decoded.item2))).toString();
+    final url = Uri.parse(utf8.decode(Bech32Decoder.decode('lnurl', lnurl)));
+    if (!(url.isScheme('https') || url.isScheme('http'))) {
+      throw OpenCryptoPayInvalidUriException(
+        'The LNURL does not encode a web URL.',
+      );
+    }
+    if (url.host.isEmpty) {
+      throw OpenCryptoPayInvalidUriException('The LNURL has no host.');
+    }
+    return _upgradeToHttps(url).toString();
   }
 
   // LUD-01 allows plain http for onion services.

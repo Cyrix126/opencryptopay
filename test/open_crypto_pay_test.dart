@@ -940,6 +940,26 @@ void main() {
       );
     });
 
+    test('an LNURL with another prefix, no web URL or host is a decode error',
+        () async {
+      for (final lnurl in [
+        Bech32Encoder.encode('lnbc', utf8.encode(_decodedApiUrl)),
+        Bech32Encoder.encode('lnurl', utf8.encode('api.dfx.swiss/pl_x')),
+        Bech32Encoder.encode('lnurl', utf8.encode('https:///pl_x')),
+      ]) {
+        final result = await _controller(
+          _mockHttpReturning(_res(jsonEncode(paymentDetailsJson), 200)),
+        ).run(
+          qrData: 'https://app.dfx.swiss/pl/?lightning=$lnurl',
+          coin: _btc,
+          ownedCoins: owned,
+        );
+
+        expect(result, isA<OpenCryptoPayError>(), reason: lnurl);
+        expect((result as OpenCryptoPayError).isDecodeError, isTrue);
+      }
+    });
+
     test('the session carries the matched method minFee and its unit',
         () async {
       final success = await _controller(_mockTwoRequestFlow(
