@@ -22,6 +22,7 @@
 - A transfer URI needs a recipient in `address` or `to`, and `/transfer` counts only before the query
 - `amount` and `isRawAmount` come from the same query key, with `uint256` before `value`
 - `amountInSmallestUnit` rounds an amount finer than the coin's precision up
+- Reject negative, hexadecimal, padded and exponent decimal amounts; accept EIP-681 scientific notation for raw amounts
 
 ## 0.3.0
 

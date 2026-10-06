@@ -876,8 +876,13 @@ void main() {
     test('unparsable amount maps to an invalid amount result', () async {
       for (final uri in [
         'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6?amount=abc',
+        'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6?amount=1e10000000',
+        'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6?amount=-0.5',
+        'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@1?value=0x10',
+        'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@1?value=%2016',
+        'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@1?value=1e100',
         'ethereum:0xdac17f958d2ee523a2206206994597c13d831ec7@1/transfer'
-            '?address=0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC&uint256=1.5e18',
+            '?address=0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC&uint256=1.5',
       ]) {
         final controller = _controller(_mockTwoRequestFlow(
           txDetailsJson: {'blockchain': 'Bitcoin', 'uri': uri, 'hint': 'x'},
@@ -916,6 +921,12 @@ void main() {
               '?amount=0.000000004',
           8,
           BigInt.one,
+        ),
+        (
+          'ethereum:0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC@1'
+              '?value=2.014e18',
+          18,
+          BigInt.parse('2014000000000000000'),
         ),
       ]) {
         final success = await _controller(_mockTwoRequestFlow(

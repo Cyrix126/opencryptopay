@@ -91,9 +91,9 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
   /// The requested amount in the coin's/token's smallest unit
   /// ([fractionDigits] decimals), or null when the URI carries no amount.
   BigInt? amountInSmallestUnit(int fractionDigits) {
-    if (isRawAmount) return BigInt.tryParse(details.amount ?? '');
     final a = amount;
     if (a == null) return null;
+    if (isRawAmount) return a.toBigInt();
     // Round up so the payment covers the requested amount.
     return a.shift(fractionDigits).ceil().toBigInt();
   }

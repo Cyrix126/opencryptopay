@@ -133,11 +133,8 @@ class OpenCryptoPayController {
 
     Decimal? amount;
     if (amountString != null && amountString.isNotEmpty) {
-      amount = Decimal.tryParse(amountString);
-      final isAmountValid = details.isRawAmount
-          ? BigInt.tryParse(amountString) != null
-          : amount != null;
-      if (!isAmountValid) return const OpenCryptoPayInvalidAmount();
+      amount = _parseAmount(amountString, isRaw: details.isRawAmount);
+      if (amount == null) return const OpenCryptoPayInvalidAmount();
     }
 
     return OpenCryptoPaySuccess(
@@ -152,6 +149,19 @@ class OpenCryptoPayController {
       amount: amount,
     );
   }
+
+  /// Parse a payment URI amount: a decimal, or for a raw amount an integer
+  /// that EIP-681 may write in scientific notation.
+  static Decimal? _parseAmount(String value, {required bool isRaw}) {
+    if (!(isRaw ? _rawAmount : _decimalAmount).hasMatch(value)) return null;
+    final amount = Decimal.parse(value);
+    return isRaw && !amount.isInteger ? null : amount;
+  }
+
+  static final _decimalAmount = RegExp(r'^(\d+\.?\d*|\.\d+)$');
+
+  // A uint256 has at most 78 digits, so a two-digit exponent covers it.
+  static final _rawAmount = RegExp(r'^\d+(\.\d+)?([eE]\d{1,2})?$');
 
   /// The provider's entry for a specific method/asset pair, if supported.
   static SupportedMethod? _supportedMethod(
