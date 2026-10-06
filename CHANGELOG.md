@@ -29,6 +29,7 @@
 - The proof type comes from a hint that mentions hex, a hash or the tx parameter; `proofType` is null otherwise and `run()` returns the new `OpenCryptoPayUnknownProofType` before reading the payment URI
 - Drop the unused `build_runner` and `mockito` dev dependencies
 - A Spark proof retry reports the transfer under a new quote from the payment details, as the spec requires
+- Add property tests for proof session safety, provider answers and amount rounding
 
 ## 0.3.0
 
