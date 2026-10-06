@@ -31,6 +31,8 @@
 - A Spark proof retry reports the transfer under a new quote from the payment details, as the spec requires
 - Add property tests for proof session safety, provider answers and amount rounding
 - A proof carries the `asset`, and EVM hex gets a `0x` prefix, as in the DFX and Cake wallets
+- `run()` returns `OpenCryptoPayInvalidAmount` for a payment URI without a positive amount, and `OpenCryptoPaySuccess.amount` and `amountInSmallestUnit` are no longer nullable
+- A `/transfer` URI takes its amount from `uint256`, else from its decimal `amount`
 
 ## 0.3.0
 

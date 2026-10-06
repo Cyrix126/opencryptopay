@@ -142,11 +142,10 @@ class OpenCryptoPayController {
     final displayName = details.displayName;
     final recipientLabel = displayName.isNotEmpty ? displayName : address;
 
-    Decimal? amount;
-    if (amountString != null && amountString.isNotEmpty) {
-      amount = _parseAmount(amountString, isRaw: details.isRawAmount);
-      if (amount == null) return const OpenCryptoPayInvalidAmount();
-    }
+    final amount = amountString == null
+        ? null
+        : _parseAmount(amountString, isRaw: details.isRawAmount);
+    if (amount == null) return const OpenCryptoPayInvalidAmount();
 
     return OpenCryptoPaySuccess(
       session: OpenCryptoPaySession(
@@ -161,12 +160,14 @@ class OpenCryptoPayController {
     );
   }
 
-  /// Parse a payment URI amount: a decimal, or for a raw amount an integer
-  /// that EIP-681 may write in scientific notation.
+  /// Parse a positive payment URI amount: a decimal, or for a raw amount an
+  /// integer that EIP-681 may write in scientific notation.
   static Decimal? _parseAmount(String value, {required bool isRaw}) {
     if (!(isRaw ? _rawAmount : _decimalAmount).hasMatch(value)) return null;
     final amount = Decimal.parse(value);
-    return isRaw && !amount.isInteger ? null : amount;
+    return amount == Decimal.zero || (isRaw && !amount.isInteger)
+        ? null
+        : amount;
   }
 
   static final _decimalAmount = RegExp(r'^(\d+\.?\d*|\.\d+)$');

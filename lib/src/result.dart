@@ -37,7 +37,7 @@ class OpenCryptoPayInvalidAddress extends OpenCryptoPayFailure {
   const OpenCryptoPayInvalidAddress();
 }
 
-/// The payment URI carries an amount that cannot be parsed.
+/// The payment URI carries no positive amount that can be parsed.
 class OpenCryptoPayInvalidAmount extends OpenCryptoPayFailure {
   const OpenCryptoPayInvalidAmount();
 }
@@ -70,10 +70,10 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
 
   final String recipientLabel;
 
-  /// The requested amount as found in the payment URI, if any. Raw
-  /// (smallest-unit) for EVM `value`/`uint256` URIs, decimal coin units
-  /// otherwise; prefer [amountInSmallestUnit], which normalizes the two.
-  final Decimal? amount;
+  /// The requested amount as found in the payment URI. Raw (smallest-unit)
+  /// for EVM `value`/`uint256` URIs, decimal coin units otherwise; prefer
+  /// [amountInSmallestUnit], which normalizes the two.
+  final Decimal amount;
 
   OpenCryptoPayTransactionDetails get details => session.details;
 
@@ -94,12 +94,10 @@ class OpenCryptoPaySuccess extends OpenCryptoPayResult {
   bool get isBroadcastRequired => details.isBroadcastRequired;
 
   /// The requested amount in the coin's/token's smallest unit
-  /// ([fractionDigits] decimals), or null when the URI carries no amount.
-  BigInt? amountInSmallestUnit(int fractionDigits) {
-    final a = amount;
-    if (a == null) return null;
-    if (isRawAmount) return a.toBigInt();
+  /// ([fractionDigits] decimals).
+  BigInt amountInSmallestUnit(int fractionDigits) {
+    if (isRawAmount) return amount.toBigInt();
     // Round up so the payment covers the requested amount.
-    return a.shift(fractionDigits).ceil().toBigInt();
+    return amount.shift(fractionDigits).ceil().toBigInt();
   }
 }

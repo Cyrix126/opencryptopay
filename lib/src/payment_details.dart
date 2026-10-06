@@ -268,12 +268,14 @@ class OpenCryptoPayTransactionDetails {
     final params = Uri.tryParse(uri ?? '')?.queryParameters;
     if (params == null) return null;
     // In an ERC-20 transfer, `value` is the ether sent along with the call.
-    for (final (key, isRaw) in const [
-      ('amount', false),
-      ('tx_amount', false),
-      ('uint256', true),
-      ('value', true),
-    ]) {
+    for (final (key, isRaw) in isErc20Transfer
+        ? const [('uint256', true), ('amount', false)]
+        : const [
+            ('amount', false),
+            ('tx_amount', false),
+            ('uint256', true),
+            ('value', true),
+          ]) {
       final value = params[key];
       if (value != null) return (value: value, isRaw: isRaw);
     }

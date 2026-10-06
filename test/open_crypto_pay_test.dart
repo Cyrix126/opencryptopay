@@ -529,6 +529,24 @@ void main() {
       );
     });
 
+    test('a transfer URI without uint256 reads its decimal amount', () {
+      final details = OpenCryptoPayTransactionDetails.fromJson(
+        {
+          'blockchain': 'InternetComputer',
+          'uri': 'icp:ryjl3-tyaaa-aaaaa-aaaba-cai/transfer'
+              '?to=ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae'
+              '&amount=0.34772601',
+        },
+        apiUrl: _decodedApiUrl,
+        displayName: 'Test Shop',
+        quoteId: 'plq_62b1865ed28358be',
+        callback: _callbackUrl,
+        quoteExpiration: DateTime.parse(_quoteExpiration),
+      );
+      expect(details.amount, '0.34772601');
+      expect(details.isRawAmount, isFalse);
+    });
+
     test('a /transfer in the query does not make a token transfer', () {
       final details = OpenCryptoPayTransactionDetails.fromJson(
         {
@@ -1663,8 +1681,9 @@ void main() {
     });
   });
 
-  // One test per statement of the OpenCryptoPay README. Where DFX production
-  // answers differently, the test follows production.
+  // One test per statement of the OpenCryptoPay README, checking that the user
+  // neither pays twice nor pays for nothing. Where DFX production answers
+  // differently, the test follows production.
   group('README', () {
     final beforeQuoteExpiry = Clock.fixed(DateTime.utc(2025, 7, 16, 1));
 
@@ -1687,14 +1706,17 @@ void main() {
           details: _readmeEthereum,
         );
 
-        final result = await provider.run(
+        final success = await provider.run(
           _eth,
           qrData: 'https://pay.example.com/pl/?lightning=$lnurl',
-        );
+        ) as OpenCryptoPaySuccess;
+        await withClock(
+            beforeQuoteExpiry, () => success.session.submitProof('0xsigned'));
 
-        expect(result, isA<OpenCryptoPaySuccess>());
+        // The proof reaches the provider that priced the payment.
         expect(provider.requests.map((url) => url.host),
             everyElement('api.example.com'));
+        expect(provider.requests.where(_isProof), hasLength(1));
       });
     });
 
@@ -1738,15 +1760,24 @@ void main() {
 
       test('an expired quote is not used, and the user scans again', () async {
         final provider = _Provider(details: _readmeEthereum);
-        final success = await provider.run(_eth) as OpenCryptoPaySuccess;
+        final hex = await provider.run(_eth) as OpenCryptoPaySuccess;
+        final hash = await _Provider(details: _readmeCardano).run(_ada)
+            as OpenCryptoPaySuccess;
 
         await withClock(Clock.fixed(DateTime.utc(2025, 7, 17)), () async {
-          expect(await success.session.submitProof('0xsigned'),
+          // The wallet checks the quote before it pays.
+          expect(hex.session.isQuoteExpired, isTrue);
+          expect(hash.session.isQuoteExpired, isTrue);
+          expect(await hex.session.submitProof('0xsigned'),
               isA<OpenCryptoPayProofQuoteExpired>());
         });
         expect(provider.requests.where(_isProof), isEmpty);
-        expect(OpenCryptoPayStrings.quoteExpiredAtSend(success.session).message,
-            contains('scan the QR code again'));
+        for (final session in [hex.session, hash.session]) {
+          expect(
+            OpenCryptoPayStrings.quoteExpiredAtSend(session).message,
+            allOf(contains('NOT sent'), contains('scan the QR code again')),
+          );
+        }
       });
 
       test('the payment details request keeps the wait for a pending payment',
@@ -1788,12 +1819,27 @@ void main() {
         );
       });
 
-      test('EVM, Bitcoin and Firo details ask for the signed transaction',
-          () async {
-        for (final (coin, details, address) in [
-          (_eth, _readmeEthereum, '0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC'),
+      test(
+          'EVM, Bitcoin and Firo details ask for a signed transaction paying '
+          'the URI', () async {
+        for (final (coin, details, address, token, decimals, amount) in [
+          (
+            _eth,
+            _readmeEthereum,
+            '0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC',
+            null,
+            18,
+            '660720000000000',
+          ),
           // DFX production
-          (_btc, _btcDetails, 'bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6'),
+          (
+            _btc,
+            _btcDetails,
+            'bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6',
+            null,
+            8,
+            '1947',
+          ),
           (
             _zchf,
             {
@@ -1804,6 +1850,9 @@ void main() {
               'hint': _dfxHexHint,
             },
             '0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC',
+            '0x02567e4b14b25549331fcee2b56c647a8bab16fd',
+            18,
+            '1000000000000000000',
           ),
           // Production Firo also takes the transaction hash.
           (
@@ -1815,22 +1864,34 @@ void main() {
               'hint': _dfxFiroHint,
             },
             'aCPrA7sqb3QN2EH8q6XUVqE9kEGJsqq5wn',
+            null,
+            8,
+            '114487149',
           ),
         ]) {
           final success = await _Provider(details: details).run(coin)
               as OpenCryptoPaySuccess;
 
           expect(success.address, address, reason: coin.prettyName);
+          expect(success.tokenContractAddress, token, reason: coin.prettyName);
+          expect(success.amountInSmallestUnit(decimals), BigInt.parse(amount),
+              reason: coin.prettyName);
           expect(success.proofType, OpenCryptoPayProofType.signedTransactionHex,
               reason: coin.prettyName);
         }
       });
 
       test(
-          'Monero, Zano, Solana, Tron and Cardano details ask for the '
-          'transaction hash', () async {
-        for (final (coin, details) in [
-          (_ada, _readmeCardano),
+          'Monero, Zano, Solana, Tron and Cardano details ask for the hash of '
+          'a transaction paying the URI', () async {
+        for (final (coin, details, address, decimals, amount) in [
+          (
+            _ada,
+            _readmeCardano,
+            'addr1qyqjzchnayplhgueg33gukpp2max9gkge4gh6jly93a0dzcm67tl9f0pkykty8my4j4hg8e9suj8nzdrjygmfy6c8d0skmaq5q',
+            6,
+            '4883112',
+          ),
           // DFX production
           (
             _xmr,
@@ -1842,6 +1903,9 @@ void main() {
                       '?tx_amount=0.00215578',
               'hint': _dfxHashHint,
             },
+            '88fWDB31A4s5bV46r7zxKnVqmrh3T1Lk1EF3A9KzEEaFfHF1n4znQ2U9qK5PJxR2RSSQshkxLZVnSdZe2ZwLSPVqGxxnq9u',
+            12,
+            '2155780000',
           ),
           (
             _sol,
@@ -1851,6 +1915,9 @@ void main() {
                   '?amount=0.01009715',
               'hint': _dfxHashHint,
             },
+            '2eQ2Somiat63oqSPwzQLrrNiceC8F6TH85dt2qDe3z36',
+            9,
+            '10097150',
           ),
           (
             _trx,
@@ -1859,11 +1926,17 @@ void main() {
               'uri': 'tron:TMBbmTrNYj16HjKzN1tsm2EaT7mzuTvSAL?amount=3.61011',
               'hint': _dfxHashHint,
             },
+            'TMBbmTrNYj16HjKzN1tsm2EaT7mzuTvSAL',
+            6,
+            '3610110',
           ),
         ]) {
           final success = await _Provider(details: details).run(coin)
               as OpenCryptoPaySuccess;
 
+          expect(success.address, address, reason: coin.prettyName);
+          expect(success.amountInSmallestUnit(decimals), BigInt.parse(amount),
+              reason: coin.prettyName);
           expect(success.proofType, OpenCryptoPayProofType.transactionHash,
               reason: coin.prettyName);
         }
@@ -1961,12 +2034,55 @@ void main() {
 
       // DFX wallets build the proof URL this way. The README examples and the
       // DFX hints show the payment ID.
-      test('the proof URL is the callback with /cb replaced by /tx', () {
+      test('the proof URL is the callback with /cb replaced by /tx', () async {
         expect(
           OpenCryptoPayService.buildTransactionProofUrl(_callbackUrl)
               .toString(),
           'https://api.dfx.swiss/v1/lnurlp/tx/pl_beeddb41cd4b6d9e',
         );
+
+        // The wallet pays only when it can send the proof.
+        final provider = _Provider(
+          info: {..._readmeInfo, 'callback': _decodedApiUrl},
+          details: _readmeCardano,
+        );
+        expect(await provider.run(_ada), isA<OpenCryptoPayError>());
+      });
+
+      test('a URI without a recipient or a positive amount is not paid',
+          () async {
+        for (final (coin, uri, failure) in [
+          (
+            _btc,
+            'bitcoin:?amount=0.00001947',
+            isA<OpenCryptoPayInvalidAddress>(),
+          ),
+          (
+            _btc,
+            'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6',
+            isA<OpenCryptoPayInvalidAmount>(),
+          ),
+          (
+            _btc,
+            'bitcoin:bc1qzx3ug7j0e64207fe2m424hvxmvd496q8gdytt6?amount=0',
+            isA<OpenCryptoPayInvalidAmount>(),
+          ),
+          // The value of an ERC-20 transfer is the ether sent with the call.
+          (
+            _zchf,
+            'ethereum:0x02567e4b14b25549331fcee2b56c647a8bab16fd@137/transfer'
+                '?address=0x9C2242a0B71FD84661Fd4bC56b75c90Fac6d10FC'
+                '&value=1000000000000000000',
+            isA<OpenCryptoPayInvalidAmount>(),
+          ),
+        ]) {
+          final result = await _Provider(details: {
+            'uri': uri,
+            'hint': _dfxHexHint,
+          }).run(coin);
+
+          expect(result, failure, reason: uri);
+        }
       });
 
       test(
@@ -2133,8 +2249,7 @@ void main() {
           if (result is OpenCryptoPaySuccess) {
             expect(result.address, isNotEmpty);
             expect(result.proofType, isNotNull);
-            expect(result.amountInSmallestUnit(8) ?? BigInt.zero,
-                greaterThanOrEqualTo(BigInt.zero));
+            expect(result.amountInSmallestUnit(8), greaterThan(BigInt.zero));
           }
         },
         // kiri_check does not await an async block while shrinking.
@@ -2161,7 +2276,7 @@ void main() {
 
           final exact = amount.shift(fractionDigits);
           final smallest = Decimal.fromBigInt(
-            success.amountInSmallestUnit(fractionDigits)!,
+            success.amountInSmallestUnit(fractionDigits),
           );
           expect(smallest, greaterThanOrEqualTo(exact));
           expect(smallest - exact, lessThan(Decimal.one));
