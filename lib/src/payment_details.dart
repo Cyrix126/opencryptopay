@@ -8,6 +8,7 @@ import 'method_map.dart';
 enum OpenCryptoPayProofType {
   transactionHash,
   signedTransactionHex,
+  senderPrincipal,
 }
 
 class OpenCryptoPayRecipient {
@@ -236,7 +237,8 @@ class OpenCryptoPayTransactionDetails {
     return at == -1 ? addr : addr.substring(0, at);
   }
 
-  /// The ERC-20 token contract address, when this payment is an EVM token
+  /// The token contract (EVM) or ledger canister (Internet Computer) that a
+  /// `/transfer` payment URI names.
   String? get tokenContractAddress {
     if (uri == null) return null;
     final value = uri!;
@@ -253,7 +255,7 @@ class OpenCryptoPayTransactionDetails {
     return contract.isEmpty ? null : contract;
   }
 
-  /// Whether this payment is an EVM ERC-20 token transfer.
+  /// Whether this payment is a token transfer through [tokenContractAddress].
   bool get isErc20Transfer => tokenContractAddress != null;
 
   /// The EIP-155 chain ID an EIP-681 [uri] names (ex: 56 in
@@ -290,7 +292,8 @@ class OpenCryptoPayTransactionDetails {
   }
 
   /// The signed transaction hex when the [hint] mentions hex, the transaction
-  /// hash when it mentions a hash or the tx parameter, and null otherwise.
+  /// hash when it mentions a hash or the tx parameter, the sender's principal
+  /// when it mentions the sender parameter, and null otherwise.
   OpenCryptoPayProofType? get proofType {
     final h = hint ?? '';
     if (RegExp(r'\bhex', caseSensitive: false).hasMatch(h)) {
@@ -298,6 +301,9 @@ class OpenCryptoPayTransactionDetails {
     }
     if (RegExp(r'\b(hash|tx parameter)\b', caseSensitive: false).hasMatch(h)) {
       return OpenCryptoPayProofType.transactionHash;
+    }
+    if (RegExp(r'\bsender parameter\b', caseSensitive: false).hasMatch(h)) {
+      return OpenCryptoPayProofType.senderPrincipal;
     }
     return null;
   }

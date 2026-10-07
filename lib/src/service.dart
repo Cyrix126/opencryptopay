@@ -160,7 +160,7 @@ class OpenCryptoPayService {
   }) async {
     if (!details.isBroadcastRequired && details.isQuoteExpired) {
       throw OpenCryptoPayQuoteExpiredException(
-        'The payment quote has expired; cannot submit signed transaction HEX.',
+        'The payment quote has expired; cannot submit the proof.',
       );
     }
 
@@ -174,6 +174,8 @@ class OpenCryptoPayService {
     params['method'] = method.method;
     if (details.isBroadcastRequired) {
       params['tx'] = txProof;
+    } else if (details.proofType == OpenCryptoPayProofType.senderPrincipal) {
+      params['sender'] = txProof;
     } else if (coin.chainType == CryptoChainType.evm &&
         !txProof.startsWith('0x')) {
       params['hex'] = '0x$txProof';

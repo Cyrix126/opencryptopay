@@ -14,8 +14,9 @@ class OpenCryptoPayProofAccepted extends OpenCryptoPayProofResult {
   const OpenCryptoPayProofAccepted();
 }
 
-/// The quote expired before the proof could be submitted. Only occurs on the
-/// signed-transaction-hex flow, before this submission reaches the provider.
+/// The quote expired before the proof could be submitted. Only occurs when the
+/// provider moves the funds (signed transaction hex or sender principal),
+/// before this submission reaches the provider.
 class OpenCryptoPayProofQuoteExpired extends OpenCryptoPayProofResult {
   const OpenCryptoPayProofQuoteExpired(this.error);
   final Object error;
@@ -94,7 +95,9 @@ class OpenCryptoPaySession {
   /// [proofType]: the broadcast transaction's id
   /// ([OpenCryptoPayProofType.transactionHash]), or the signed raw transaction
   /// hex ([OpenCryptoPayProofType.signedTransactionHex]) which the provider
-  /// broadcasts itself ([isBroadcastRequired] is false).
+  /// broadcasts itself ([isBroadcastRequired] is false), or the wallet's
+  /// principal ([OpenCryptoPayProofType.senderPrincipal]) once it approved the
+  /// provider to pull the amount.
   /// A call made while a submission is in flight returns that submission.
   Future<OpenCryptoPayProofResult> submitProof(String txProof) =>
       _pendingProof ??=

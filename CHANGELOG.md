@@ -34,6 +34,7 @@
 - `run()` returns `OpenCryptoPayInvalidAmount` for a payment URI without a positive amount, and `OpenCryptoPaySuccess.amount` and `amountInSmallestUnit` are no longer nullable
 - A `/transfer` URI takes its amount from `uint256`, else from its decimal `amount`
 - `CryptoCoin.chainId` names an EVM coin's chain, and `run()` returns the new `OpenCryptoPayWrongChain` for a payment URI on another chain
+- Add `OpenCryptoPayProofType.senderPrincipal` for a hint that asks for the sender parameter; the wallet approves the provider on the token's ICRC-2 ledger and submits its principal as `sender`
 
 ## 0.3.0
 

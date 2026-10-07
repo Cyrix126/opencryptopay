@@ -675,6 +675,7 @@ void main() {
     // BinancePay returned an error.
     const hex = OpenCryptoPayProofType.signedTransactionHex;
     const hash = OpenCryptoPayProofType.transactionHash;
+    const sender = OpenCryptoPayProofType.senderPrincipal;
     const dfxHints = {
       'Ethereum': (_dfxHexHint, hex),
       'Polygon': (_dfxHexHint, hex),
@@ -689,11 +690,11 @@ void main() {
       'Tron': (_dfxHashHint, hash),
       'Cardano': (_dfxHashHint, hash),
       'Spark': (_dfxSparkHint, hash),
-      'InternetComputer': (_dfxInternetComputerHint, null),
+      'InternetComputer': (_dfxInternetComputerHint, sender),
     };
     for (final MapEntry(key: method, value: (hint, proofType))
         in dfxHints.entries) {
-      test('DFX $method hint -> ${proofType?.name ?? 'no proof type'}', () {
+      test('DFX $method hint -> ${proofType.name}', () {
         final details = OpenCryptoPayTransactionDetails.fromJson(
           {'blockchain': method, 'hint': hint},
           apiUrl: _decodedApiUrl,
@@ -1482,6 +1483,46 @@ void main() {
       });
     });
 
+    test('submitProof sends the sender principal to the /tx endpoint derived '
+        'from the callback', () async {
+      await withClock(fixedClock, () async {
+        final details = OpenCryptoPayTransactionDetails.fromJson(
+          {
+            'blockchain': 'InternetComputer',
+            'uri': 'icp:ryjl3-tyaaa-aaaaa-aaaba-cai/transfer'
+                '?to=ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae'
+                '&amount=0.34772601',
+            'hint': _dfxInternetComputerHint,
+          },
+          apiUrl: _decodedApiUrl,
+          displayName: 'Test Shop',
+          quoteId: 'plq_62b1865ed28358be',
+          callback: _callbackUrl,
+          quoteExpiration: DateTime.parse(_quoteExpiration),
+        );
+        Uri? proofUrl;
+        final session = OpenCryptoPaySession(
+          details: details,
+          coin: _icp,
+          service: OpenCryptoPayService(
+            client: _mockHttpWithHandler((url) {
+              proofUrl = url;
+              return _res('ok', 200);
+            }),
+          ),
+        );
+
+        expect(await session.submitProof('principalDummy'),
+            isA<OpenCryptoPayProofAccepted>());
+        expect(proofUrl!.path, '/v1/lnurlp/tx/pl_beeddb41cd4b6d9e');
+        expect(proofUrl!.queryParameters['method'], 'InternetComputer');
+        expect(proofUrl!.queryParameters['asset'], 'ICP');
+        expect(proofUrl!.queryParameters['sender'], 'principalDummy');
+        expect(proofUrl!.queryParameters.containsKey('hex'), isFalse);
+        expect(proofUrl!.queryParameters.containsKey('tx'), isFalse);
+      });
+    });
+
     test('proof failure message depends on whether the wallet broadcast',
         () async {
       await withClock(fixedClock, () async {
@@ -1957,13 +1998,16 @@ void main() {
         expect(success.proofType, OpenCryptoPayProofType.transactionHash);
       });
 
-      test('Internet Computer is reported as unsupported', () async {
-        for (final uri in [
-          'icp:6bf47-...-cai?amount=0.08415',
+      test('Internet Computer is paid by approving the provider', () async {
+        for (final (uri, address) in [
+          ('icp:6bf47-...-cai?amount=0.08415', '6bf47-...-cai'),
           // DFX production
-          'icp:ryjl3-tyaaa-aaaaa-aaaba-cai/transfer'
-              '?to=ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae'
-              '&amount=0.34772601',
+          (
+            'icp:ryjl3-tyaaa-aaaaa-aaaba-cai/transfer'
+                '?to=ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae'
+                '&amount=0.34772601',
+            'ygf2v-iniac-cojwe-damoz-s4act-k4xft-xgpjy-776wl-wr754-qxkgo-4ae',
+          ),
         ]) {
           final result = await _Provider(details: {
             'blockchain': 'InternetComputer',
@@ -1971,7 +2015,11 @@ void main() {
             'hint': _dfxInternetComputerHint,
           }).run(_icp);
 
-          expect(result, isA<OpenCryptoPayUnknownProofType>(), reason: uri);
+          expect(result, isA<OpenCryptoPaySuccess>(), reason: uri);
+          final success = result as OpenCryptoPaySuccess;
+          expect(success.proofType, OpenCryptoPayProofType.senderPrincipal);
+          expect(success.isBroadcastRequired, isFalse);
+          expect(success.address, address);
         }
       });
 

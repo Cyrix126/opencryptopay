@@ -6,7 +6,7 @@ Provider agnostic Dart implementation of the [OpenCryptoPay](https://github.com/
 - [x] Fetch pending payment details for a given coin
 - [x] Fetch coins supported from provider
 - [x] Submit proof of payment
-- [x] Detect proof type (signed TX HEX vs tx hash) and instruct wallet accordingly
+- [x] Detect proof type (signed TX HEX, tx hash or sender principal) and instruct wallet accordingly
 - [x] Let wallet plug their own HTTP client (`package:http` `Client`) and coin type
 
 ## Install
@@ -56,11 +56,16 @@ switch (result) {
       showError(OpenCryptoPayStrings.quoteExpiredAtSend(success.session));
       break;
     }
-    // When success.isBroadcastRequired, broadcast it and submit its hash.
-    // Otherwise submit the signed transaction HEX, which the provider
-    // broadcasts.
     final proof = await success.session.submitProof(
-      success.isBroadcastRequired ? txHash : signedTxHex,
+      switch (success.proofType!) {
+        // Broadcast the transaction and submit its hash.
+        OpenCryptoPayProofType.transactionHash => txHash,
+        // Submit the signed transaction HEX, which the provider broadcasts.
+        OpenCryptoPayProofType.signedTransactionHex => signedTxHex,
+        // Approve success.address on the token's ICRC-2 ledger for the
+        // amount plus the transfer fee, then submit your principal.
+        OpenCryptoPayProofType.senderPrincipal => principal,
+      },
     );
     if (proof is OpenCryptoPayProofFailed) {
       showError(OpenCryptoPayStrings.proofFailure(success.session));
